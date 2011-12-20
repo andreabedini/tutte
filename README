@@ -1,0 +1,134 @@
+**********************************************************************
+*  tutte - computes the Tutte Polynomial
+*
+*  Copyright 2011 Andrea Bedini.	
+*
+*  Distributed under the terms of the GNU General Public License.
+*  The full license is in the file COPYING, distributed as part of
+*  this software.
+**********************************************************************
+
+This program computes the Tutte Polynomial of a user-supplied graph
+using the algorithm described in [1].
+
+* Requirements
+
+  Two additional pieces of software are required:
+
+  - gmplib, http://gmplib.org
+
+  - boost libraries, http://www.boost.org
+
+    Only program_options library has to be compiled. 
+
+    You might need to set the environment variable BOOST_ROOT to the
+    directory where boost libraries are located.
+
+    A quick and dirty recipe to build the boost libraries is:
+    
+    $ wget http://sourceforge.net/projects/boost/files/boost/1.48.0/boost_1_48_0.tar.gz/download
+    $ tar xzf boost_1_48_0.tar.gz
+    $ cd boost_1_48_0
+    $ ./bootstrap.sh --with-libraries=program_options
+    $ ./b2
+    $ export BOOST_ROOT=$(pwd)
+
+* Compilation
+
+  To compile the program you have to do
+
+  $ tar xjf tutte-1.0.tar.bz2
+  $ cd tutte-1.0
+  $ ./waf configure build
+
+  On successful build, the executable 'tutte' will be placed in
+  the subfolder 'build'.
+
+  To run a quick test do
+  $ ./waf test
+
+* Input
+
+  The input is expected to be passed to the program through the
+  standard input. Additional messages are always printed on the error
+  output. As in:
+
+  $ cat my_graph | ./build/tutte
+
+  or
+
+  $ ./build/tutte < my_graph
+
+  The result is presented on the standard output.
+
+  The input format looks like this:
+
+  0--1,1--2,2--3,3--0,4--5,5--6,6--7,7--4
+
+  this describe a graph with 8 vertices and 8 edges. Each edge is
+  represented as a pair of numbers each representing a vertex.
+  
+  It is *important* that the vertex numbering starts from zero, so
+  that vertex indices are in [0..V) where V is the number of vertices.
+
+  The AWK script shift_vertex_indices.awk can be used to shift vertex
+  indices so that they start from zero as follows:
+
+  $ cat my_input | ./shift_vertex_indices.awk | ./build/tutte
+
+  Alternatively an input file can be specified with the option --input-file
+  
+  $ ./build/tutte --input-file my_input    
+
+* Options
+
+  A list of options is available witht the command
+
+  $ ./build/tutte --help
+  Allowed options:
+  -h [ --help ]           Produce help message
+  -f [ --flow ]           Compute the flow polynomial
+  -c [ --chromatic ]      Compute the chromatic polynomial
+  --degree                Use greedy degree algorithm [default].
+  --fill-in               Use greedy fill-in algorithm.
+  --local-degree          Use 'local' greedy degree algorithm.
+  --local-fill-in         Use 'local' greedy fill-in algorithm.
+  --elimination-order arg Specify a vertex elimination order.
+  --print-tree            Print tree decomposition.
+  --tree-only             Print tree decomposition and exit.
+  --chinese-remainder     Use the chinese remainder trick.
+  --input-file arg        Read the graph from a file.
+
+  Options --flow and --chromatic tell the program to compute the
+  relevant specialization of the Tutte polynomial. In the variables
+  $(Q,v)$, passing --flow to the program sets $v = -Q$, while passing
+  --chromatic sets $v = -1$.
+
+  Options --degree and --fillin choose which algorithm has to be used
+  to compute the tree decomposition. Greedy Degree and Greedy Fill-In
+  algorithms are described in [2].
+
+  'local' greedy degree algorithm and 'local' greedy fill-in algorithm
+  are home-crafted modifications to the above algorithms to make them
+  always output a path-decomposition.
+ 
+  A vertex elimination order (in the terminology of Bodlaender and
+  Koster) can be specified on directly on the command line as a comma
+  separated list of vertices.
+
+* Remarks
+  
+  Edges are assigned to bags as they appear in the elimination
+  ordering. For the sake of generality and maintenance, problem
+  specific optimizations, such as the pruning procedure described in
+  [1], are not implemented.
+
+* References
+
+[1] Bedini, A. & Jacobsen, J.L. A tree-decomposed transfer matrix for
+computing exact Potts model partition functions for arbitrary graphs,
+with applications to planar graph colourings. J. Phys. A:
+Math. Theor. 43, 385001 (2010).
+
+[2] Bodlaender, H.L. & Koster, A.M.C.A. Treewidth computations
+I. Upper bounds. Information and Computation 208, 259–275 (2010).
