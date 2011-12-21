@@ -15,7 +15,7 @@
 #define TRANSFER_HPP
 
 #include "tree_decomposition/tree_decomposition.hpp"
-
+#include <boost/foreach.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
 
 namespace transfer {
