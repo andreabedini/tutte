@@ -16,7 +16,6 @@
 
 #include "tree_decomposition/tree_decomposition.hpp"
 
-#include <boost/graph/graph_traits.hpp>
 #include <boost/range/algorithm/set_algorithm.hpp>
 
 namespace transfer {
