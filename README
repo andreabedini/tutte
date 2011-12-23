@@ -33,7 +33,7 @@ using the algorithm described in [1].
     $ ./b2
     $ export BOOST_ROOT=$(pwd)
 
-* Compilation
+* Compilation and installation
 
   To compile the program you have to do
 
@@ -46,6 +46,14 @@ using the algorithm described in [1].
 
   To run a quick test do
   $ ./waf test
+
+  To install the program into a system location (the default is
+  '/usr/local')just use
+  $ ./waf install
+
+  The install location can be changed at config time with the --prefix
+  option
+  $ ./waf configure --prefix /some/other/place
 
 * Input
 
