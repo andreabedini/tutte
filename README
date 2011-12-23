@@ -37,8 +37,8 @@ using the algorithm described in [1].
 
   To compile the program you have to do
 
-  $ tar xjf tutte-1.0.tar.bz2
-  $ cd tutte-1.0
+  $ tar xjf tutte-1.1.tar.bz2
+  $ cd tutte-1.1
   $ ./waf configure build
 
   On successful build, the executable 'tutte' will be placed in
