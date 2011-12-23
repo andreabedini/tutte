@@ -52,7 +52,10 @@ public:
   { impl_.swap(o.impl_); }
 
   iterator insert(const T& x) {
-    return impl_.insert(std::lower_bound(begin(), end(), x), x);
+    iterator i = std::lower_bound(begin(), end(), x);
+    if (i == impl_.end() or x < *i)
+      i = impl_.insert(i, x);
+    return i;
   }
 
   void remove(const T& x) {
