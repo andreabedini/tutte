@@ -3,7 +3,7 @@
 import os
 
 # the following two variables are used by the target "waf dist"
-VERSION='1.0'
+VERSION='1.1'
 APPNAME='tutte'
 
 # these variables are mandatory ('/' are converted automatically)

@@ -1,0 +1,16 @@
+2011-12-23  Andrea  <abedini@ms.unimelb.edu.au>
+
+	Version 1.1
+
+	* src/tutte.cpp: Constraint the input to connected graphs.
+
+	* include/utility/smallset.hpp: Fix bug in smallset set container.
+
+	* include/tree_decomposition/tree_decomposition.hpp: Fix bug
+	causing genuine edges being marked as filling edges. Correctly
+	allow for multiple edges.
+
+2011-12-20  Andrea  <abedini@ms.unimelb.edu.au>
+
+	Version 1.0
+
