@@ -88,6 +88,9 @@ using the algorithm described in [1].
   
   $ ./build/tutte --input-file my_input    
 
+  NOTE: The input graph has to be connected, giving as input a graph with
+  multiple connected components will result in a runtime error.
+
 * Options
 
   A list of options is available witht the command

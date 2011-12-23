@@ -24,6 +24,8 @@
 #include "utility/polynomial_two.hpp"
 
 #include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/connected_components.hpp>
+#include <boost/property_map/vector_property_map.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm/equal.hpp>
 #include <boost/range/algorithm/sort.hpp>
@@ -139,6 +141,17 @@ int main (int argc, char *argv[])
   std::cerr << "Graph with " << num_vertices(g) << " vertices and "
        << num_edges(g) << " edges.\n";
   
+  // check for connectedness
+  boost::vector_property_map
+    < int
+    , boost::property_map<graph_type, boost::vertex_index_t>::type
+    > component(num_edges(g), get(boost::vertex_index, g));
+  int num = connected_components(g, component);
+  if (num > 1) {
+    std::cerr << "The input graph is not connected. A connected input is required\n";
+    return 1;
+  }
+
   std::vector<unsigned int> order(num_vertices(g));
   
   if (vm.count("fill-in")) {
