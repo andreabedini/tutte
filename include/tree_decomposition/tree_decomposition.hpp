@@ -25,11 +25,12 @@
 
 #include <algorithm>
 #include <iosfwd>
+#include <vector>
 
 namespace tree_decomposition {
   struct bag {
     smallset<unsigned int> vertices;
-    smallset<std::pair<unsigned int, unsigned int> > edges;
+    std::vector<std::pair<unsigned int, unsigned int> > edges;
   };
 
   typedef tree<bag> tree_decomposition;
@@ -79,7 +80,7 @@ namespace tree_decomposition {
 	bags[vi].vertices.insert(ui);
 	// add the edge to the bag if the edge is 'genuine'
 	if (not filling_edge[e])
-	  bags[vi].edges.insert(make_pair(vi, ui));
+	  bags[vi].edges.push_back(make_pair(vi, ui));
       }
 
       // if we find the parent vertex index
@@ -92,7 +93,7 @@ namespace tree_decomposition {
       BOOST_FOREACH(vertex_descriptor a, adjacent_vertices(v, g)) {
 	BOOST_FOREACH(vertex_descriptor b, adjacent_vertices(v, g)) {
 	  if (a != b and not edge(a, b, g).second) {
-	    edge_descriptor e = add_edge(a, b, g).first;
+	    edge_descriptor e = add_edge(a, b, num_edges(g), g).first;
 	    filling_edge[e] = true;
 	  }
 	}
