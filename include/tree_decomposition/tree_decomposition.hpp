@@ -47,6 +47,7 @@ namespace tree_decomposition {
     typedef typename Graph::edge_descriptor   edge_descriptor;
 
     vector<vertex_descriptor> vertices(num_vertices(g));
+    unsigned int free_edge_index = num_edges(g);
 
     // list (stable) vertex descriptors in the user-supplied order
     unsigned int i = 0;
@@ -93,7 +94,7 @@ namespace tree_decomposition {
       BOOST_FOREACH(vertex_descriptor a, adjacent_vertices(v, g)) {
 	BOOST_FOREACH(vertex_descriptor b, adjacent_vertices(v, g)) {
 	  if (a != b and not edge(a, b, g).second) {
-	    edge_descriptor e = add_edge(a, b, num_edges(g), g).first;
+	    edge_descriptor e = add_edge(a, b, free_edge_index++, g).first;
 	    filling_edge[e] = true;
 	  }
 	}
