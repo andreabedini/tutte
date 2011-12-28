@@ -34,10 +34,10 @@ def configure(ctx):
 	ctx.write_config_header('include/tutteconfig.h') 
 
 def run_test(ctx):
-	test_str = './tutte --input-file ${SRC[0].abspath()} | diff --ignore-all-space - ${SRC[1].abspath()}'
- 	for t in ['square4x4ff', ]:
- 		ctx(rule = test_str, name = t,
-		    source = ['tests/%s.input' % t, 'tests/%s.output' % t],
+	test_str = './tutte --input-file ${SRC[0].abspath()} 2>/dev/null | diff --ignore-all-space - ${SRC[1].abspath()}'
+	for i, o in zip(ctx.path.ant_glob('tests/*.input'), ctx.path.ant_glob('tests/*.output')):
+ 		ctx(rule = test_str, name = i,
+		    source = [i, o],
  		    always = True, shell = True, color = 'PINK')
 
 def build(bld):
