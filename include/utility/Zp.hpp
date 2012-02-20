@@ -2,7 +2,7 @@
  *  Zp.hpp
  *
  *  Created by Andrea Bedini on 19/09/08.
- *  Copyright 2008, 2009, 2010, 2011 Andrea Bedini.
+ *  Copyright 2008, 2009, 2010, 2011, 2012 Andrea Bedini.
  *
  *  Distributed under the terms of the GNU General Public License.
  *  The full license is in the file COPYING, distributed as part of
@@ -22,13 +22,22 @@
 #include <iosfwd>
 
 namespace modular {
+  class Zp;
+}
+
+namespace boost {
+  template<> struct is_integral <modular::Zp> : public true_type {};
+  template<> struct is_signed   <modular::Zp> : public false_type {};
+}
+
+namespace modular {
   using boost::enable_if;
   using boost::disable_if;
 
   using boost::uint64_t;
 
-  typedef long double ldouble; 
-  
+  typedef long double ldouble;
+
   inline uint64_t mul_mod(uint64_t a, uint64_t b, uint64_t m)
   {
     uint64_t x = a * b;
@@ -58,13 +67,13 @@ namespace modular {
     explicit Zp(T n, typename boost::disable_if<boost::is_signed<T> >::type* = 0)
       : rep_(n % M)
     { }
-    
+
     operator unsigned long() const { return rep_; }
 
     static uint64_t get_modulus() {
       return M;
     }
-    
+
     static void set_modulus(uint64_t p) {
       M = p;
     }
@@ -116,11 +125,6 @@ namespace modular {
   };
 
   uint64_t Zp::M;
-}
-
-namespace boost {
-  template<> struct is_integral <modular::Zp> : public true_type {};
-  template<> struct is_signed   <modular::Zp> : public false_type {};
 }
 
 #endif
