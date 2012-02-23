@@ -3,7 +3,7 @@
  *
  *
  *  Created by Andrea Bedini on 24/Nov/2011.
- *  Copyright 2011 Andrea Bedini.
+ *  Copyright 2011, 2012 Andrea Bedini.
  *
  *  Distributed under the terms of the GNU General Public License.
  *  The full license is in the file COPYING, distributed as part of
@@ -26,12 +26,12 @@ namespace {
   public:
     mapped_connect(M m, C& c) : m(m), c(c)
     { }
-    
+
     void operator()(unsigned int i, unsigned int j) const {
       c.connect(m[i], m[j]);
     }
   };
-    
+
   template<class M, class C>
   mapped_connect<M, C> make_mapped_connect(M m, C& c) {
     return mapped_connect<M, C>(m, c);
@@ -44,14 +44,14 @@ class tutte
   const Weight Q;
   const Weight v;
 
-public: 
+public:
   typedef Weight weight_type;
   typedef boost::unordered_map<connectivity, weight_type> table_type;
   typedef typename table_type::const_iterator table_const_iterator;
 
   template<class T, class U>
   tutte(T const& Q_, U const& v_) : Q(Q_), v(v_) {}
-  
+
   table_type empty_state(unsigned int size) const
   {
     table_type tmp_table;
@@ -70,7 +70,7 @@ public:
     }
     return tmp_table;
   }
-    
+
   table_type
   delete_operator(unsigned int i, table_type const& t) const
   {
@@ -81,7 +81,7 @@ public:
     }
     return tmp_table;
   }
-  
+
   template<class Mapping>
   table_type
   table_fusion(Mapping A_to_B,

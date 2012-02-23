@@ -1,7 +1,7 @@
 **********************************************************************
 *  tutte - computes the Tutte Polynomial
 *
-*  Copyright 2011 Andrea Bedini.	
+*  Copyright 2011, 2012 Andrea Bedini.
 *
 *  Distributed under the terms of the GNU General Public License.
 *  The full license is in the file COPYING, distributed as part of
@@ -19,13 +19,13 @@ using the algorithm described in [1].
 
   - boost libraries, http://www.boost.org
 
-    Only program_options library has to be compiled. 
+    Only program_options library has to be compiled.
 
     You might need to set the environment variable BOOST_ROOT to the
     directory where boost libraries are located.
 
     A quick and dirty recipe to build the boost libraries is:
-    
+
     $ wget http://sourceforge.net/projects/boost/files/boost/1.48.0/boost_1_48_0.tar.gz/download
     $ tar xzf boost_1_48_0.tar.gz
     $ cd boost_1_48_0
@@ -75,7 +75,7 @@ using the algorithm described in [1].
 
   this describe a graph with 8 vertices and 8 edges. Each edge is
   represented as a pair of numbers each representing a vertex.
-  
+
   It is *important* that the vertex numbering starts from zero, so
   that vertex indices are in [0..V) where V is the number of vertices.
 
@@ -85,8 +85,8 @@ using the algorithm described in [1].
   $ cat my_input | ./shift_vertex_indices.awk | ./build/tutte
 
   Alternatively an input file can be specified with the option --input-file
-  
-  $ ./build/tutte --input-file my_input    
+
+  $ ./build/tutte --input-file my_input
 
   NOTE: The input graph has to be connected, giving as input a graph with
   multiple connected components will result in a runtime error.
@@ -122,13 +122,13 @@ using the algorithm described in [1].
   'local' greedy degree algorithm and 'local' greedy fill-in algorithm
   are home-crafted modifications to the above algorithms to make them
   always output a path-decomposition.
- 
+
   A vertex elimination order (in the terminology of Bodlaender and
   Koster) can be specified on directly on the command line as a comma
   separated list of vertices.
 
 * Remarks
-  
+
   Edges are assigned to bags as they appear in the elimination
   ordering. For the sake of generality and maintenance, problem
   specific optimizations, such as the pruning procedure described in

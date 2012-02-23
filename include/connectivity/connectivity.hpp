@@ -3,7 +3,7 @@
  *
  *
  *  Created by Andrea Bedini on 10/Jul/2009.
- *  Copyright 2009, 2010, 2011 Andrea Bedini.
+ *  Copyright 2009, 2010, 2011, 2012 Andrea Bedini.
  *
  *  Distributed under the terms of the GNU General Public License.
  *  The full license is in the file COPYING, distributed as part of
@@ -25,7 +25,7 @@
 class connectivity
 {
   typedef boost::uint8_t uint8_t;
-  
+
   unsigned int size_;
   uint8_t * impl_;
 
@@ -55,10 +55,10 @@ public:
   {
     if (this != &rhs) {
       uint8_t* new_impl_ = new uint8_t[rhs.size_];
-      std::copy(rhs.impl_, rhs.impl_ + rhs.size_, new_impl_);      
+      std::copy(rhs.impl_, rhs.impl_ + rhs.size_, new_impl_);
       delete [] impl_;
       impl_ = new_impl_;
-      size_ = rhs.size_;      
+      size_ = rhs.size_;
     }
     return *this;
   }
@@ -85,11 +85,11 @@ public:
     connectivity_functions::canonicalize(size_, impl_);
     return *this;
   }
- 
+
   //////////////////////////////////////////////////////////////////////
   // const
   //////////////////////////////////////////////////////////////////////
-  
+
   bool connected(unsigned int i, unsigned int j) const
   {
     return connectivity_functions::connected(impl_, i, j);

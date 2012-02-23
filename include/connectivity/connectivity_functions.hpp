@@ -3,7 +3,7 @@
  *
  *
  *  Created by Andrea Bedini on 24/Nov/2011.
- *  Copyright 2011 Andrea Bedini.
+ *  Copyright 2011, 2012 Andrea Bedini.
  *
  *  Distributed under the terms of the GNU General Public License.
  *  The full license is in the file COPYING, distributed as part of
@@ -21,7 +21,7 @@
 
 namespace connectivity_functions {
   using boost::uint8_t;
-  
+
   void connect(unsigned int n, uint8_t* a, unsigned int i, unsigned int j)
   {
     uint8_t li = a[i], lj = a[j];

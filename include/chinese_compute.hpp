@@ -3,7 +3,7 @@
  *
  *
  *  Created by Andrea Bedini on 24/Nov/2011.
- *  Copyright 2011 Andrea Bedini.
+ *  Copyright 2011, 2012 Andrea Bedini.
  *
  *  Distributed under the terms of the GNU General Public License.
  *  The full license is in the file COPYING, distributed as part of
@@ -41,8 +41,8 @@ void chinese_compute(const tree_decomposition::tree_decomposition& t,
   using namespace boost;
 
   using modular::Zp;
-  
-  typedef polynomial_two<big_int> big_poly;  
+
+  typedef polynomial_two<big_int> big_poly;
   typedef polynomial_two<Zp> small_poly;
 
   unsigned int k = 0;
@@ -50,7 +50,7 @@ void chinese_compute(const tree_decomposition::tree_decomposition& t,
   big_poly result_last, result;
   big_int qs[num_primes];
   big_int pp = 1;
-  
+
   do {
     Zp::set_modulus(primes[k]);
     tutte<small_poly> tutte_algo(Q, v);
@@ -59,9 +59,9 @@ void chinese_compute(const tree_decomposition::tree_decomposition& t,
 
     for (unsigned int i = 0; i < k + 1; ++ i)
       qs[i] = pp / primes[i] * modinv(pp / primes[i], primes[i]);
-    
+
     result_last = result;
-    
+
     partial_results[k] = big_poly(transfer::transfer(tutte_algo, t));
     cerr << "result (mod " << Zp::get_modulus() << ")\t: " << partial_results[k] << "\n";
 
@@ -79,4 +79,3 @@ void chinese_compute(const tree_decomposition::tree_decomposition& t,
 }
 
 #endif
-

@@ -3,7 +3,7 @@
  *
  *
  *  Created by Andrea Bedinion 13/Jul/2009.
- *  Copyright 2009, 2010, 2011 Andrea Bedini.
+ *  Copyright 2009, 2010, 2011, 2012 Andrea Bedini.
  *
  *  Distributed under the terms of the GNU General Public License.
  *  The full license is in the file COPYING, distributed as part of

@@ -3,7 +3,7 @@
  *
  *
  *  Created by Andrea Bedini on 24/Nov/2011.
- *  Copyright 2011 Andrea Bedini.
+ *  Copyright 2011, 2012 Andrea Bedini.
  *
  *  Distributed under the terms of the GNU General Public License.
  *  The full license is in the file COPYING, distributed as part of
@@ -97,13 +97,13 @@ int main (int argc, char *argv[])
     std::cerr << "error: " << e.what() << "\n";
     return 1;
   }
-  
+
   if (vm.count("help")) {
     std::cerr << manifesto << "\n";
     std::cerr << desc << "\n";
     return 0;
   }
-  
+
   int check = 0;
   check += vm.count("degree");
   check += vm.count("fill-in");
@@ -117,7 +117,7 @@ int main (int argc, char *argv[])
       "local-degree, local-fill-in and elimination-order\n";
     return 1;
   }
-  
+
   graph_type g;
   try {
     std::string s;
@@ -137,10 +137,10 @@ int main (int argc, char *argv[])
     std::cerr << "error: " << e.what() << "\n";
     return 1;
   }
-  
+
   std::cerr << "Graph with " << num_vertices(g) << " vertices and "
        << num_edges(g) << " edges.\n";
-  
+
   // check for connectedness
   boost::vector_property_map
     < int
@@ -153,7 +153,7 @@ int main (int argc, char *argv[])
   }
 
   std::vector<unsigned int> order(num_vertices(g));
-  
+
   if (vm.count("fill-in")) {
     heuristics::greedy_fillin_order(g, order.begin());
   } else if (vm.count("local-degree")) {
@@ -173,33 +173,33 @@ int main (int argc, char *argv[])
   } else {
     heuristics::greedy_degree_order(g, order.begin());
   }
-  
+
   typedef tree_decomposition::tree_decomposition tree_type;
   tree_type td = tree_decomposition::build_tree_decomposition(order, g);
-  
+
   if (vm.count("print-tree") or vm.count("tree-only")) {
     std::cerr << "Elimination order: ";
     for (unsigned int i = 0; i < num_vertices(g); ++i)
       std::cerr << order[i] << " ";
     std::cerr << "\n";
-    
+
     std::cerr << "Tree decomposition: " << td << "\n"
 	 << "Tree decomposition width: "
 	 << tree_width(td) << "\n";
   }
-  
+
   if (vm.count("tree-only"))
     return 0;
-  
+
   polynomial_two<int> Q = polynomial_two<int>::Q();
   polynomial_two<int> v = polynomial_two<int>::v();
-  
+
   if (vm.count("flow")) {
     v = -Q;
   } else if (vm.count("chromatic")) {
     v = -1;
   }
-  
+
   if (vm.count("chinese-remainder")) {
     chinese_compute(td, Q, v);
   } else {
