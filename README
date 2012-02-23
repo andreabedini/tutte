@@ -9,7 +9,14 @@
 **********************************************************************
 
 This program computes the Tutte Polynomial of a user-supplied graph
-using the algorithm described in [1].
+using the algorithm described in:
+
+  Bedini, A. & Jacobsen, J.L. A tree-decomposed transfer matrix for
+  computing exact Potts model partition functions for arbitrary
+  graphs, with applications to planar graph colourings. J. Phys. A:
+  Math. Theor. 43, 385001 (2010).
+
+** IF YOU USE THIS SOFTWARE FOR RESEACH PLEASE CITE THE ABOVE PAPER **
 
 * Requirements
 
@@ -117,7 +124,10 @@ using the algorithm described in [1].
 
   Options --degree and --fillin choose which algorithm has to be used
   to compute the tree decomposition. Greedy Degree and Greedy Fill-In
-  algorithms are described in [2].
+  algorithms are described in:
+
+   Bodlaender, H.L. & Koster, A.M.C.A. Treewidth computations I. Upper
+   bounds. Information and Computation 208, 259–275 (2010).
 
   'local' greedy degree algorithm and 'local' greedy fill-in algorithm
   are home-crafted modifications to the above algorithms to make them
@@ -132,14 +142,4 @@ using the algorithm described in [1].
   Edges are assigned to bags as they appear in the elimination
   ordering. For the sake of generality and maintenance, problem
   specific optimizations, such as the pruning procedure described in
-  [1], are not implemented.
-
-* References
-
-[1] Bedini, A. & Jacobsen, J.L. A tree-decomposed transfer matrix for
-computing exact Potts model partition functions for arbitrary graphs,
-with applications to planar graph colourings. J. Phys. A:
-Math. Theor. 43, 385001 (2010).
-
-[2] Bodlaender, H.L. & Koster, A.M.C.A. Treewidth computations
-I. Upper bounds. Information and Computation 208, 259–275 (2010).
+  the paper, are not implemented.
