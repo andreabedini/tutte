@@ -33,9 +33,9 @@ using the algorithm described in:
 
     A quick and dirty recipe to build the boost libraries is:
 
-    $ wget http://sourceforge.net/projects/boost/files/boost/1.48.0/boost_1_48_0.tar.gz/download
-    $ tar xzf boost_1_48_0.tar.gz
-    $ cd boost_1_48_0
+    $ wget http://sourceforge.net/projects/boost/files/boost/1.53.0/boost_1_53_0.tar.gz
+    $ tar xzf boost_1_53_0.tar.gz
+    $ cd boost_1_53_0
     $ ./bootstrap.sh --with-libraries=program_options
     $ ./b2
     $ export BOOST_ROOT=$(pwd)
