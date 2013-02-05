@@ -13,12 +13,13 @@
 
 #ifndef CHINESE_COMPUTE_HPP
 
-#include "big_int.hpp"
 #include "transfer.hpp"
 #include "tree_decomposition/tree_decomposition.hpp"
 #include "tutte.hpp"
 #include "utility/polynomial_two.hpp"
 #include "utility/Zp.hpp"
+
+#include <boost/multiprecision/gmp.hpp> 
 
 #include <numeric>
 #include <iostream>
@@ -31,7 +32,16 @@ const uint32_t primes[] = {
   4294966829UL, 4294966813UL
 };
 
+using boost::multiprecision::mpz_int;
+
 const size_t num_primes = sizeof(primes)/sizeof(uint32_t);
+
+mpz_int modinv(const mpz_int& a, const mpz_int& b)
+{
+  mpz_int r;
+  mpz_invert(r.backend().data(), a.backend().data(), b.backend().data());
+  return r;
+}
 
 template<class T, class U>
 void chinese_compute(const tree_decomposition::tree_decomposition& t,
@@ -42,14 +52,14 @@ void chinese_compute(const tree_decomposition::tree_decomposition& t,
 
   using modular::Zp;
 
-  typedef polynomial_two<big_int> big_poly;
+  typedef polynomial_two<mpz_int> big_poly;
   typedef polynomial_two<Zp> small_poly;
 
   unsigned int k = 0;
   big_poly partial_results[num_primes];
   big_poly result_last, result;
-  big_int qs[num_primes];
-  big_int pp = 1;
+  mpz_int qs[num_primes];
+  mpz_int pp = 1;
 
   do {
     Zp::set_modulus(primes[k]);
@@ -68,7 +78,7 @@ void chinese_compute(const tree_decomposition::tree_decomposition& t,
     result = inner_product(partial_results, partial_results + k + 1, qs, big_poly(0));
     result %= pp;
 
-    big_int limit = pp >> 1;
+    mpz_int limit = pp >> 1;
     for (big_poly::iterator i = result.begin(); i != result.end(); ++i)
       if (i->c > limit)
 	i->c -= pp;

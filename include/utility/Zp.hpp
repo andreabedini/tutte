@@ -28,6 +28,7 @@ namespace modular {
 namespace boost {
   template<> struct is_integral <modular::Zp> : public true_type {};
   template<> struct is_signed   <modular::Zp> : public false_type {};
+  template<> struct is_unsigned   <modular::Zp> : public true_type {};
 }
 
 namespace modular {

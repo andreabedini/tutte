@@ -18,7 +18,7 @@ def configure(ctx):
 	ctx.load('compiler_cxx')
 	ctx.load('boost')
 
-	ctx.env.append_value('CXXFLAGS', ['-Wall', '-ansi', '-pedantic', '-O3']) 
+	ctx.env.append_value('CXXFLAGS', ['-Wall', '-Wno-long-long', '-ansi', '-pedantic', '-O3']) 
 	ctx.check_cc(lib = 'gmp')
 	ctx.check_cxx(lib = 'gmpxx')
 

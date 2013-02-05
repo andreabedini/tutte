@@ -13,7 +13,6 @@
 
 #include "tutteconfig.h"
 
-#include "big_int.hpp"
 #include "chinese_compute.hpp"
 #include "graph_type.hpp"
 #include "parse_graph.hpp"
@@ -25,6 +24,7 @@
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
+#include <boost/multiprecision/gmp.hpp> 
 #include <boost/property_map/vector_property_map.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm/equal.hpp>
@@ -45,6 +45,8 @@ const char manifesto[] =
   "Distributed under the terms of the GNU General Public License.\n"
   "The full license is in the file COPYING, distributed as part of\n"
   "this software.\n";
+
+using boost::multiprecision::mpz_int;
 
 /*
  * code to parse user supplied elimination order
@@ -203,7 +205,7 @@ int main (int argc, char *argv[])
   if (vm.count("chinese-remainder")) {
     chinese_compute(td, Q, v);
   } else {
-    typedef polynomial_two<big_int> big_poly;
+    typedef polynomial_two<mpz_int> big_poly;
     tutte<big_poly> tutte_algo(Q, v);
     big_poly result = transfer::transfer(tutte_algo, td);
     std::cout << result << "\n";
