@@ -1,5 +1,2 @@
 *~
-*.pyc
-.lock*
-build
-.waf*
+bin

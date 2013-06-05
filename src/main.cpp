@@ -3,28 +3,26 @@
  *
  *
  *  Created by Andrea Bedini on 24/Nov/2011.
- *  Copyright 2011, 2012 Andrea Bedini.
+ *  Copyright (c) 2011-2013, Andrea Bedini <andrea.bedini@gmail.com>.
  *
- *  Distributed under the terms of the GNU General Public License.
+ *  Distributed under the terms of the Modified BSD License.
  *  The full license is in the file COPYING, distributed as part of
  *  this software.
  *
  */
 
-#include "tutteconfig.h"
-
-#include "chinese_compute.hpp"
+#include "chinese_remainder.hpp"
 #include "graph_type.hpp"
 #include "parse_graph.hpp"
 #include "transfer.hpp"
 #include "tree_decomposition/heuristics.hpp"
 #include "tree_decomposition/tree_decomposition.hpp"
 #include "tutte.hpp"
+#include "utility/gmp.hpp"
 #include "utility/polynomial_two.hpp"
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
-#include <boost/multiprecision/gmp.hpp> 
 #include <boost/property_map/vector_property_map.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm/equal.hpp>
@@ -39,26 +37,22 @@
 #include <vector>
 
 const char manifesto[] =
-  "tutte - computes the Tutte Polynomial - "
-  "version " VERSION "\n\n"
-  "Copyright 2011 Andrea Bedini.\n\n"
-  "Distributed under the terms of the GNU General Public License.\n"
+  "tutte - computes the Tutte Polynomial\n"
+  "Copyright (c) 2011-2013, Andrea Bedini <andrea.bedini@gmail.com>.\n\n"
+  "Distributed under the terms of the Modified BSD License.\n"
   "The full license is in the file COPYING, distributed as part of\n"
   "this software.\n";
 
-using boost::multiprecision::mpz_int;
-
 /*
- * code to parse user supplied elimination order
+ * code to parse user-supplied elimination order
  */
 
 template<class OutputIterator>
 void parse_elimination_order(std::string const& s, OutputIterator out)
 {
   boost::tokenizer<> tok(s);
-  boost::tokenizer<>::iterator i;
-  for(i = tok.begin(); i != tok.end(); ++i)
-    *out++ = boost::lexical_cast<unsigned>(*i);
+  for (auto& c : tok)
+    *out++ = boost::lexical_cast<unsigned>(c);
 }
 
 /*
@@ -71,14 +65,21 @@ bool validate_elimination_order(Range range, Graph const& g)
   return equal(sort(range), irange((size_t) 0, num_vertices(g)));
 }
 
+/*
+ *  The algorithm to run, dependent on the weight type 
+ */
+
+template<typename T>
+using algo = tutte<polynomial_two<T>>;
+
 int main (int argc, char *argv[])
 {
   namespace po = boost::program_options;
   po::options_description desc("Allowed options");
   desc.add_options()
     ("help,h", "Produce help message")
-    ("flow,f", "Compute the flow polynomial")
-    ("chromatic,c", "Compute the chromatic polynomial")
+    ("input-file", po::value<std::string>(), "Read the graph from a file.")
+    // tree decomposition options
     ("degree", "Use greedy degree algorithm [default].")
     ("fill-in", "Use greedy fill-in algorithm.")
     ("local-degree", "Use 'local' greedy degree algorithm.")
@@ -86,8 +87,10 @@ int main (int argc, char *argv[])
     ("elimination-order", po::value<std::string>(), "Specify a vertex elimination order.")
     ("print-tree", "Print tree decomposition.")
     ("tree-only", "Print tree decomposition and exit.")
+    // tutte options
+    ("flow,f", "Compute the flow polynomial")
+    ("chromatic,c", "Compute the chromatic polynomial")
     ("chinese-remainder", "Use the chinese remainder trick.")
-    ("input-file", po::value<std::string>(), "Read the graph from a file.")
     ;
 
   po::variables_map vm;
@@ -101,8 +104,7 @@ int main (int argc, char *argv[])
   }
 
   if (vm.count("help")) {
-    std::cerr << manifesto << "\n";
-    std::cerr << desc << "\n";
+    std::cerr << manifesto << "\n" << desc << "\n";
     return 0;
   }
 
@@ -127,8 +129,8 @@ int main (int argc, char *argv[])
       std::string filename = vm["input-file"].as<std::string>();
       std::ifstream input(filename.c_str(), std::ios_base::in);
       if (not input.is_open()) {
-	std::cerr << "error: file " << filename << " not found\n";
-	return 1;
+        std::cerr << "error: file " << filename << " not found\n";
+        return 1;
       }
       input >> s;
     } else {
@@ -141,14 +143,12 @@ int main (int argc, char *argv[])
   }
 
   std::cerr << "Graph with " << num_vertices(g) << " vertices and "
-       << num_edges(g) << " edges.\n";
+            << num_edges(g) << " edges.\n";
 
   // check for connectedness
-  boost::vector_property_map
-    < int
-    , boost::property_map<graph_type, boost::vertex_index_t>::type
-    > component(num_edges(g), get(boost::vertex_index, g));
-  int num = connected_components(g, component);
+  auto component = boost::make_vector_property_map<int>(
+    get(boost::vertex_index, g));
+  auto num = connected_components(g, component);
   if (num > 1) {
     std::cerr << "The input graph is not connected. A connected input is required\n";
     return 1;
@@ -176,25 +176,24 @@ int main (int argc, char *argv[])
     heuristics::greedy_degree_order(g, order.begin());
   }
 
-  typedef tree_decomposition::tree_decomposition tree_type;
-  tree_type td = tree_decomposition::build_tree_decomposition(order, g);
+  auto td = tree_decomposition::build_tree_decomposition(order, g);
 
   if (vm.count("print-tree") or vm.count("tree-only")) {
     std::cerr << "Elimination order: ";
-    for (unsigned int i = 0; i < num_vertices(g); ++i)
-      std::cerr << order[i] << " ";
+    for (auto x : order)
+      std::cerr << x << " ";
     std::cerr << "\n";
 
     std::cerr << "Tree decomposition: " << td << "\n"
-	 << "Tree decomposition width: "
-	 << tree_width(td) << "\n";
+              << "Tree decomposition width: "
+              << max_bag_size(td) - 1 << "\n";
   }
 
   if (vm.count("tree-only"))
     return 0;
 
-  polynomial_two<int> Q = polynomial_two<int>::Q();
-  polynomial_two<int> v = polynomial_two<int>::v();
+  auto Q = polynomial_two<int>::Q();
+  auto v = polynomial_two<int>::v();
 
   if (vm.count("flow")) {
     v = -Q;
@@ -203,11 +202,10 @@ int main (int argc, char *argv[])
   }
 
   if (vm.count("chinese-remainder")) {
-    chinese_compute(td, Q, v);
+    chinese_remainder::chinese_remainder<algo>(td, Q, v);
   } else {
-    typedef polynomial_two<mpz_int> big_poly;
-    tutte<big_poly> tutte_algo(Q, v);
-    big_poly result = transfer::transfer(tutte_algo, td);
+    using gmp::mpz_int;
+    auto result = transfer::transfer(algo<mpz_int>(Q, v), td);
     std::cout << result << "\n";
   }
 }

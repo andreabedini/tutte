@@ -1,11 +1,11 @@
 /*
- *  polynomial_two_two.hpp
+ *  polynomial_two.hpp
  *
  *
  *  Created by Andrea Bedini on 24/Nov/2011.
- *  Copyright 2011 Andrea Bedini.
+ *  Copyright (c) 2011-2013, Andrea Bedini <andrea.bedini@gmail.com>.
  *
- *  Distributed under the terms of the GNU General Public License.
+ *  Distributed under the terms of the Modified BSD License.
  *  The full license is in the file COPYING, distributed as part of
  *  this software.
  *
@@ -15,9 +15,7 @@
 #define POLYNOMIAL_TWO_HPP
 
 #include <boost/operators.hpp>
-#include <boost/format.hpp>
 #include <iosfwd>
-#include <map>
 
 template<class T>
 class polynomial_two
@@ -28,12 +26,9 @@ class polynomial_two
 {
 public:
   typedef unsigned short int index;
-
   struct element {
     index i, j;
     T c;
-    element(index i, index j, T c)
-      : i(i), j(j), c(c) {}
     bool operator==(element const& rhs) const
     { return i == rhs.i and j == rhs.j and c == rhs.c; }
   };
@@ -48,12 +43,12 @@ public:
 
 private:
   void cleanup() {
-    iterator i = begin();
-    while (i != end()) {
+    iterator i = elements_.begin();
+    while (i != elements_.end()) {
       if (i->c == T(0))
-	i = elements_.erase(i);
+        i = elements_.erase(i);
       else
-	++i;
+        ++i;
     }
   }
 
@@ -71,12 +66,13 @@ private:
     }
   };
 
-  T& coeff(index const& i, index const& j)
+  T& coeff(index i, index j)
   {
-    const element e(i, j, T(0));
-    iterator it = std::lower_bound(begin(), end(), e, indices_less());
-    if (it == end() or not indices_equal()(*it, e))
+    const element e{i, j, T(0)};
+    auto it = std::lower_bound(elements_.begin(), elements_.end(), e, indices_less());
+    if (it == elements_.end() or not indices_equal()(*it, e)) {
       it = elements_.insert(it, e);
+    }
     return it->c;
   }
 
@@ -86,31 +82,61 @@ private:
 public:
   // default constructor
   explicit polynomial_two(T const& a = T(0))
-    : elements_(1, element(0, 0, a))
+    : elements_{{0, 0, a}}
+  {
+  }
+
+  polynomial_two(std::initializer_list<element> list)
+    : elements_(list)
+  {
+  }
+
+  // copy constructor
+  polynomial_two(polynomial_two<T> const& rhs)
+    : elements_(rhs.elements_)
+  {
+  }
+
+  // move constructor
+  polynomial_two(polynomial_two<T>&& rhs)
+    : elements_(std::move(rhs.elements_))
   {
   }
   
-  // conversion
+  // assignemnt
+  polynomial_two<T>& operator=(polynomial_two<T> const& rhs)
+  {
+    elements_ = rhs.elements_;
+    return *this;
+  }
+
+  polynomial_two<T>& operator=(polynomial_two<T>&& rhs)
+  {
+    elements_ = std::move(rhs.elements_);
+    return *this;
+  }
+
+  // conversions
+  template<typename T2>
+  friend class polynomial_two;
+
   template<class T2>
   explicit polynomial_two(T2 const& a)
-    : elements_(1, element(0, 0, T(a)))
+    : elements_{{0, 0, T(a)}}
   {
   }
 
   template<class T2>
   explicit polynomial_two(polynomial_two<T2> const& rhs)
   {
-    typename polynomial_two<T2>::const_iterator it;
-    for (it = rhs.begin(); it != rhs.end(); ++it)
-      coeff(it->i, it->j) = T(it->c);
+    for (auto const& e : rhs.elements_) {
+      coeff(e.i, e.j) = T(e.c);
+    }
   }
-
-  // assignemnt
   template<class T2>
   polynomial_two<T>& operator=(T2 const& rhs)
   {
-    elements_.clear();
-    elements_.push_back(element(0, 0, T(rhs)));
+    elements_ = {{0, 0, T(rhs)}};
     return *this;
   }
 
@@ -118,9 +144,9 @@ public:
   polynomial_two<T>& operator=(polynomial_two<T2> const& rhs)
   {
     elements_.clear();
-    typename polynomial_two<T2>::const_iterator it;
-    for (it = rhs.begin(); it != rhs.end(); ++it)
-      coeff(it->i, it->j) = T(it->c);
+    for (auto const& e : rhs.elements_) {
+      coeff(e.i, e.j) = T(e.c);
+    }
     return *this;
   }
 
@@ -128,12 +154,12 @@ public:
   
   static polynomial_two<T> Q()
   {
-    return polynomial_two(elements_type(1, element(1, 0, T(1))));
+    return {{1, 0, T(1)}};
   }
 
   static polynomial_two<T> v()
   {
-    return polynomial_two(elements_type(1, element(0, 1, T(1))));
+    return {{0, 1, T(1)}};
   }
 
   // swap
@@ -171,34 +197,24 @@ public:
   polynomial_two<T>& operator*=(T const& rhs)
   {
     iterator it;
-    for (it = begin(); it != end(); ++it)
-      it->c *= rhs;
+    for (auto& e : elements_)
+      e.c *= rhs;
     return *this;
   }
 
-  polynomial_two<T>& operator%=(T const& rhs)
-  {
-    iterator it;
-    for (it = begin(); it != end(); ++it)
-      it->c %= rhs;
-    return *this;
-  }
-  
   // ring operators with polynomial_two<T>
   polynomial_two<T>& operator+=(polynomial_two<T> const& rhs)
   {
-    const_iterator it;
-    for (it = rhs.elements_.begin(); it != rhs.elements_.end(); ++it)
-      coeff(it->i, it->j) += it->c;
+    for (auto const& e : rhs.elements_)
+      coeff(e.i, e.j) += e.c;
     cleanup();
     return *this;
   }
   
   polynomial_two<T>& operator-=(polynomial_two<T> const& rhs)
   {
-    const_iterator it;
-    for (it = rhs.elements_.begin(); it != rhs.elements_.end(); ++it)
-      coeff(it->i, it->j) -= it->c;
+    for (auto const& e : rhs.elements_)
+      coeff(e.i, e.j) -= e.c;
     cleanup();
     return *this;
   }
@@ -206,12 +222,9 @@ public:
   polynomial_two<T>& operator*=(polynomial_two<T> const& rhs)
   {
     polynomial_two<T> result;
-    const_iterator it1, it2;
-    for (it1 = rhs.elements_.begin(); it1 != rhs.elements_.end(); ++it1) {
-      for (it2 = begin(); it2 != end(); ++it2) {
-    	result.coeff(it1->i + it2->i, it1->j + it2->j) += it1->c * it2->c;
-      }
-    }
+    for (auto const& e1 : rhs.elements_)
+      for (auto const& e2 : elements_)
+        result.coeff(e1.i + e2.i, e1.j + e2.j) += e1.c * e2.c;
     swap(result);
     return *this;
   }
@@ -220,12 +233,10 @@ public:
 
   const polynomial_two<T> operator-() const
   {
-    polynomial_two<T> y;
-    const_iterator it;
-    for (it = begin(); it != end(); ++it) {
-      y.coeff(it->i, it->j) = -it->c;
-    }
-    return y;
+    polynomial_two<T> result;
+    for (auto const& e : elements_)
+      result.coeff(e.i, e.j) = -e.c;
+    return result;
   }
 
   // member functions
@@ -233,47 +244,45 @@ public:
   const polynomial_two<T> times_Q() const
   {
     polynomial_two<T> result;
-    const_iterator it;
-    for (it = begin(); it != end(); ++it)
-      result.coeff(it->i + 1, it->j) = it->c;
+    for (auto const& e : elements_)
+      result.coeff(e.i + 1, e.j) = e.c;
     return result;
   }
 
   const polynomial_two<T> times_v() const
   {
     polynomial_two<T> result;
-    const_iterator it;
-    for (it = begin(); it != end(); ++it)
-      result.coeff(it->i, it->j + 1) = it->c;
+    for (auto const& e : elements_)
+      result.coeff(e.i, e.j + 1) = e.c;
     return result;
   }
   
   friend
   std::ostream& operator<<(std::ostream& o, polynomial_two<T> const& p)
   {
-    const_iterator it = p.elements_.begin();
+    auto it = p.elements_.begin();
     while (it != p.elements_.end()) {
       T c = it->c;
       if (c < 0) {
-	o << "- ";
-	c = -c;
+        o << "- ";
+        c = -c;
       } else {
-	o << "+ ";
+        o << "+ ";
       }
       if (c != 1 or (it->i == 0 and it->j == 0))
-	o << c << " ";
+        o << c << " ";
       if (it->i == 1)
-	o << "Q ";
+        o << "Q ";
       if (it->i > 1)
-	o << "Q^" << it->i << " ";
+        o << "Q^" << it->i << " ";
       if (it->j == 1)
-	o << "v ";
+        o << "v ";
       if (it->j > 1)
-	o << "v^" << it->j << " ";
+        o << "v^" << it->j << " ";
       ++ it;
     }
     return o;
-  }		
+  }   
 };
 
 template<class T>

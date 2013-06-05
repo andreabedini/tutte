@@ -3,9 +3,9 @@
  *
  *
  *  Created by Andrea Bedini on 24/Nov/2011.
- *  Copyright 2011 Andrea Bedini.
+ *  Copyright (c) 2011-2013, Andrea Bedini <andrea.bedini@gmail.com>.
  *
- *  Distributed under the terms of the GNU General Public License.
+ *  Distributed under the terms of the Modified BSD License.
  *  The full license is in the file COPYING, distributed as part of
  *  this software.
  *

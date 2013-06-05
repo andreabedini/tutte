@@ -1,9 +1,9 @@
 **********************************************************************
 *  tutte - computes the Tutte Polynomial
 *
-*  Copyright 2011, 2012 Andrea Bedini.
+*  Copyright (c) 2011-2013, Andrea Bedini <andrea.bedini@gmail.com>
 *
-*  Distributed under the terms of the GNU General Public License.
+*  Distributed under the terms of the Modified BSD License.
 *  The full license is in the file COPYING, distributed as part of
 *  this software.
 **********************************************************************
@@ -20,47 +20,57 @@ using the algorithm described in:
 
 * Requirements
 
-  Two additional pieces of software are required:
+  - A modern C++ compiler which supports C++11. I tested gcc 4.7 and clang 4.2.
 
   - gmplib, http://gmplib.org
 
-  - boost libraries, http://www.boost.org
+  - Boost libraries, http://www.boost.org
 
-    Only program_options library has to be compiled.
+    The required library (program_options) will be compiled
+    automatically by the build system.
 
-    You might need to set the environment variable BOOST_ROOT to the
-    directory where boost libraries are located.
+  - Boost.Build, distributed with the Boost libraries
 
-    A quick and dirty recipe to build the boost libraries is:
-
-    $ wget http://sourceforge.net/projects/boost/files/boost/1.53.0/boost_1_53_0.tar.gz
-    $ tar xzf boost_1_53_0.tar.gz
-    $ cd boost_1_53_0
-    $ ./bootstrap.sh --with-libraries=program_options
-    $ ./b2
-    $ export BOOST_ROOT=$(pwd)
+    The rationale behind the choice of Boost.Build is in the binary
+    incompatibilities between GNU libstdc++ in C++98 mode and in C++11
+    mode and the new libc++ standard library than clang uses.
+    Boost.Build assures everything is built with the same compilation
+    flags, preventing linking issues.
 
 * Compilation and installation
 
+  You need to set the environment variable BOOST_ROOT to the directory
+  where the Boost libraries are located or supply the path on the
+  command line.
+
   To compile the program you have to do
 
-  $ tar xjf tutte-1.2.tar.bz2
-  $ cd tutte-1.2
-  $ ./waf configure build
+  $ git clone git://github.com/andreabedini/tutte.git
+  $ cd tutte
+
+  Then, if you are using gcc
+
+  $ b2 gcc release
+
+  and if you are using clang
+
+  $ b2 clang release
+
+  The path to the boost libraries can also be specified on the command
+  line:
+
+  $ b2 -sBOOST_ROOT=$HOME/boost_1_53_0 gcc release
+
+  A version suitable for debugging can be obtained by replacing
+  'release' with 'debug' in the command line.
 
   On successful build, the executable 'tutte' will be placed in
-  the subfolder 'build'.
+  the subfolder 'bin'.
 
-  To run a quick test do
-  $ ./waf test
+  A small set of tests in executed after each
+  build but they can be run again invoking
 
-  To install the program into a system location (the default is
-  '/usr/local')just use
-  $ ./waf install
-
-  The install location can be changed at config time with the --prefix
-  option
-  $ ./waf configure --prefix /some/other/place
+  ./run_tests.sh bin/tutte
 
 * Input
 
@@ -68,11 +78,11 @@ using the algorithm described in:
   standard input. Additional messages are always printed on the error
   output. As in:
 
-  $ cat my_graph | ./build/tutte
+  $ cat my_graph | bin/tutte
 
   or
 
-  $ ./build/tutte < my_graph
+  $ bin/tutte < my_graph
 
   The result is presented on the standard output.
 
@@ -80,20 +90,15 @@ using the algorithm described in:
 
   0--1,1--2,2--3,3--0,4--5,5--6,6--7,7--4
 
-  this describe a graph with 8 vertices and 8 edges. Each edge is
+  This describe a graph with 8 vertices and 8 edges. Each edge is
   represented as a pair of numbers each representing a vertex.
 
   It is *important* that the vertex numbering starts from zero, so
   that vertex indices are in [0..V) where V is the number of vertices.
 
-  The AWK script shift_vertex_indices.awk can be used to shift vertex
-  indices so that they start from zero as follows:
-
-  $ cat my_input | ./shift_vertex_indices.awk | ./build/tutte
-
   Alternatively an input file can be specified with the option --input-file
 
-  $ ./build/tutte --input-file my_input
+  $ bin/tutte --input-file my_input
 
   NOTE: The input graph has to be connected, giving as input a graph with
   multiple connected components will result in a runtime error.
@@ -102,11 +107,9 @@ using the algorithm described in:
 
   A list of options is available witht the command
 
-  $ ./build/tutte --help
-  Allowed options:
+  $ bin/tutte --help
   -h [ --help ]           Produce help message
-  -f [ --flow ]           Compute the flow polynomial
-  -c [ --chromatic ]      Compute the chromatic polynomial
+  --input-file arg        Read the graph from a file.
   --degree                Use greedy degree algorithm [default].
   --fill-in               Use greedy fill-in algorithm.
   --local-degree          Use 'local' greedy degree algorithm.
@@ -114,8 +117,9 @@ using the algorithm described in:
   --elimination-order arg Specify a vertex elimination order.
   --print-tree            Print tree decomposition.
   --tree-only             Print tree decomposition and exit.
+  -f [ --flow ]           Compute the flow polynomial
+  -c [ --chromatic ]      Compute the chromatic polynomial
   --chinese-remainder     Use the chinese remainder trick.
-  --input-file arg        Read the graph from a file.
 
   Options --flow and --chromatic tell the program to compute the
   relevant specialization of the Tutte polynomial. In the variables
@@ -126,8 +130,8 @@ using the algorithm described in:
   to compute the tree decomposition. Greedy Degree and Greedy Fill-In
   algorithms are described in:
 
-   Bodlaender, H.L. & Koster, A.M.C.A. Treewidth computations I. Upper
-   bounds. Information and Computation 208, 259–275 (2010).
+    Bodlaender, H.L. & Koster, A.M.C.A. Treewidth computations I. Upper
+    bounds. Information and Computation 208, 259–275 (2010).
 
   'local' greedy degree algorithm and 'local' greedy fill-in algorithm
   are home-crafted modifications to the above algorithms to make them

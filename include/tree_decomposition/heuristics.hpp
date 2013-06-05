@@ -3,9 +3,9 @@
  *
  *
  *  Created by Andrea Bedini on 24/Nov/2011.
- *  Copyright 2011 Andrea Bedini.
+ *  Copyright (c) 2011-2013, Andrea Bedini <andrea.bedini@gmail.com>.
  *
- *  Distributed under the terms of the GNU General Public License.
+ *  Distributed under the terms of the Modified BSD License.
  *  The full license is in the file COPYING, distributed as part of
  *  this software.
  *
@@ -14,69 +14,45 @@
 #ifndef HEURISTICS_HPP
 #define HEURISTICS_HPP
 
-#include "tree_decomposition/eliminate_vertex.hpp"
-#include "tree_decomposition/tree_decomposition.hpp"
-
-#include <boost/foreach.hpp>
-#include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm.hpp>
-#include <boost/graph/graph_traits.hpp>
-
-#include <algorithm>
-
-namespace {
-  template<class Graph>
-  struct degree_compare {
-    typedef typename boost::graph_traits<Graph>::vertex_descriptor vertex_descriptor;
-    const Graph &g;
-
-    degree_compare(const Graph& g) : g(g) {}
-    bool operator()(vertex_descriptor v, vertex_descriptor u) const {
-      return degree(v, g) < degree(u, g);
-    }
-  };
-
-
-  template<class Graph>
-  class fillin_compare {
-    typedef typename boost::graph_traits<Graph>::vertex_descriptor vertex_descriptor;
-    typedef typename boost::graph_traits<Graph>::adjacency_iterator adjacency_iterator;
-
-    const Graph &g;
-
-    unsigned int num_non_adjacent_neighbors(vertex_descriptor v) const
-    {
-      unsigned int n = 0;
-      BOOST_FOREACH(vertex_descriptor u, adjacent_vertices(v, g)) {
-	adjacency_iterator ai_u, ai_end_u;
-	tie(ai_u, ai_end_u) = adjacent_vertices(u, g);
-	BOOST_FOREACH(vertex_descriptor z, adjacent_vertices(v, g)) {
-	  if (std::find(ai_u, ai_end_u, z) != ai_end_u)
-	    n ++;
-	}
-      }
-      return n;
-    }
-  public:
-    fillin_compare(const Graph& g) : g(g) {}
-
-    bool operator()(vertex_descriptor v, vertex_descriptor u) const {
-      return num_non_adjacent_neighbors(v) < num_non_adjacent_neighbors(u);
-    }
-  };
-}
 
 namespace heuristics {
   using namespace boost;
-  using namespace boost::adaptors;
+
+  template<class Vertex, class Graph>
+  void eliminate_vertex(Vertex v, Graph& g) {
+    for (auto a : as_range(adjacent_vertices(v, g))) {
+      for (auto b : as_range(adjacent_vertices(v, g))) {
+        if (a != b and not edge(a, b, g).second) {
+          add_edge(a, b, g);
+        }
+      }
+    }
+    clear_vertex(v, g);
+    remove_vertex(v, g);
+  }
+
+  template<class Graph, class Vertex>
+  unsigned int num_non_adjacent_neighbors(Vertex v, Graph const& g)
+  {
+    unsigned int n = 0;
+    for (auto u : as_range(adjacent_vertices(v, g))) {
+      auto adj = adjacent_vertices(u, g);
+      for (auto z : as_range(adjacent_vertices(v, g))) {
+        if (boost::find(adj, z) != end(adj))
+          n ++;
+      }
+    }
+    return n;
+  }
 
   template<class Graph, class OutputIterator>
   void greedy_degree_order(Graph g, OutputIterator out) {
-    typedef typename Graph::vertex_descriptor vertex_descriptor;
-
-    degree_compare<Graph> compare(g);
+    using vertex = typename Graph::vertex_descriptor;
     while (num_vertices(g) > 0) {
-      vertex_descriptor v = *min_element(vertices(g), compare);
+      auto v = *min_element(vertices(g), [&](vertex v, vertex u) {
+        return degree(v, g) < degree(u, g);
+      });
       *out++ = get(vertex_index, g, v);
       eliminate_vertex(v, g);
     }
@@ -86,11 +62,11 @@ namespace heuristics {
 
   template<class Graph, class OutputIterator>
   void greedy_fillin_order(Graph g, OutputIterator out) {
-    typedef typename Graph::vertex_descriptor vertex_descriptor;
-
-    fillin_compare<Graph> compare(g);
+    using vertex = typename Graph::vertex_descriptor;
     while (num_vertices(g) > 0) {
-      vertex_descriptor v = *min_element(vertices(g), compare);
+      auto v = *min_element(vertices(g), [&](vertex v, vertex u) {
+        return num_non_adjacent_neighbors(v, g) < num_non_adjacent_neighbors(u, g);
+      });
       *out++ = get(vertex_index, g, v);
       eliminate_vertex(v, g);
     }
@@ -100,13 +76,14 @@ namespace heuristics {
 
   template<class Graph, class OutputIterator>
   void greedy_local_degree_order(Graph g, OutputIterator out) {
-    typedef typename Graph::vertex_descriptor vertex_descriptor;
-    
-    degree_compare<Graph> compare(g);
-    vertex_descriptor current = *min_element(vertices(g), compare);
+    using vertex = typename Graph::vertex_descriptor;
+    auto compare = [&](vertex v, vertex u) {
+      return degree(v, g) < degree(u, g);
+    };
+    vertex current = *min_element(vertices(g), compare);
     while (num_vertices(g) > 0) {
       *out++ = get(vertex_index, g, current);
-      vertex_descriptor next = *min_element(adjacent_vertices(current, g), compare);
+      vertex next = *min_element(vertices(g), compare);
       eliminate_vertex(current, g);
       current = next;
     }
@@ -116,13 +93,14 @@ namespace heuristics {
 
   template<class Graph, class OutputIterator>
   void greedy_local_fillin_order(Graph g, OutputIterator out) {
-    typedef typename Graph::vertex_descriptor vertex_descriptor;
-
-    fillin_compare<Graph> compare(g);
-    vertex_descriptor current = *min_element(vertices(g), compare);
+    using vertex = typename Graph::vertex_descriptor;
+    auto compare =  [&](vertex v, vertex u) {
+      return num_non_adjacent_neighbors(v, g) < num_non_adjacent_neighbors(u, g);
+    };
+    vertex current = *min_element(vertices(g), compare);
     while (num_vertices(g) > 0) {
       *out++ = get(vertex_index, g, current);
-      vertex_descriptor next = *min_element(adjacent_vertices(current, g), compare);
+      vertex next = *min_element(adjacent_vertices(current, g), compare);
       eliminate_vertex(current, g);
       current = next;
     }

@@ -2,9 +2,9 @@
  *  Zp.hpp
  *
  *  Created by Andrea Bedini on 19/09/08.
- *  Copyright 2008, 2009, 2010, 2011, 2012 Andrea Bedini.
+ *  Copyright (c) 2008-2013, Andrea Bedini <andrea.bedini@gmail.com>.
  *
- *  Distributed under the terms of the GNU General Public License.
+ *  Distributed under the terms of the Modified BSD License.
  *  The full license is in the file COPYING, distributed as part of
  *  this software.
  *

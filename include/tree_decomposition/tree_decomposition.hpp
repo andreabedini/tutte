@@ -3,9 +3,9 @@
  *
  *
  *  Created by Andrea Bedini on 14/Jul/09.
- *  Copyright 2009, 2010, 2011 Andrea Bedini. 
+ *  Copyright (c) 2009-2013, Andrea Bedini <andrea.bedini@gmail.com>. 
  *
- *  Distributed under the terms of the GNU General Public License.
+ *  Distributed under the terms of the Modified BSD License.
  *  The full license is in the file COPYING, distributed as part of
  *  this software.
  *
@@ -14,90 +14,108 @@
 #ifndef TREE_DECOMPOSITION_HPP
 #define TREE_DECOMPOSITION_HPP
 
-#include "tree_decomposition/tree.hh"
 #include "utility/smallset.hpp"
 
-#include <boost/foreach.hpp>
 #include <boost/graph/graph_traits.hpp>
 #include <boost/graph/properties.hpp>
+#include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm/find_first_of.hpp>
 #include <boost/property_map/vector_property_map.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <algorithm>
 #include <iosfwd>
 #include <vector>
 
+namespace {
+  // this is because pair range access removed from C++11
+  // http://stackoverflow.com/questions/6167598/why-was-pair-range-access-removed-from-c11
+  template<class Iter>
+  struct iter_pair_range : std::pair<Iter,Iter> {
+    iter_pair_range(std::pair<Iter,Iter> const& x)
+    : std::pair<Iter,Iter>(x)
+    {}
+    Iter begin() const {return this->first;}
+    Iter end()   const {return this->second;}
+  };
+  template<class Iter>
+  inline iter_pair_range<Iter> as_range(std::pair<Iter,Iter> const& x)
+  { return iter_pair_range<Iter>(x); }
+}
+
 namespace tree_decomposition {
+  typedef unsigned int uint;
+  typedef smallset<uint> vertex_list;
+  typedef std::vector<std::pair<uint, uint> > edge_list;
+
+  struct bag;
+  typedef std::shared_ptr<bag> bag_ptr;
   struct bag {
-    smallset<unsigned int> vertices;
-    std::vector<std::pair<unsigned int, unsigned int> > edges;
+    vertex_list vertices;
+    edge_list edges;
+    std::vector<bag_ptr> children;
   };
 
-  typedef tree<bag> tree_decomposition;
+  using tree_decomposition = bag_ptr;
 
   template<class Graph, class Range>
-  tree_decomposition
-  build_tree_decomposition(Range const& order, Graph g)
+  bag_ptr build_tree_decomposition(Range const& order, Graph g)
   // please note that g is passed by copy
   {
-    using namespace std;
     using namespace boost;
+    using vertex_descriptor = typename graph_traits<Graph>::vertex_descriptor;
 
-    typedef typename Graph::vertex_descriptor vertex_descriptor;
-    typedef typename Graph::edge_descriptor   edge_descriptor;
-
-    vector<vertex_descriptor> vertices(num_vertices(g));
-    unsigned int free_edge_index = num_edges(g);
+    std::vector<vertex_descriptor> vertices(num_vertices(g));
+    auto free_edge_index = num_edges(g);
 
     // list (stable) vertex descriptors in the user-supplied order
-    unsigned int i = 0;
-    BOOST_FOREACH(unsigned int vi, order)
+    uint i = 0;
+    for (auto vi : order)
       vertices[i++] = vertex(vi, g);
 
     // bags will be indexed by vertex indices
-    vector<bag> bags(num_vertices(g));
+    std::vector<bag_ptr> bags(num_vertices(g));
 
     // each bag's parent index need also to be stored
-    vector<unsigned int> parent(num_vertices(g));
+    std::map<uint, uint> parent;
 
     // we need this map to differenciate between edges added during
     // vertex eliminations from the ones originally present in the
     // graph
-    vector_property_map
-      < bool
-      , typename property_map<Graph, edge_index_t>::type
-      > filling_edge(num_edges(g), get(edge_index, g));
+    auto filling_edge = make_vector_property_map<bool>(get(edge_index, g));
 
     // iterate over these vertices in order
-    BOOST_FOREACH(vertex_descriptor v, vertices) {
+    for (auto v : vertices) {
       // this is the index
-      unsigned int vi = get(vertex_index, g, v);
+      uint vi = get(vertex_index, g, v);
+
+      bags[vi] = std::make_shared<bag>();
 
       // add to each vertex bag the vertex (index) vi
-      bags[vi].vertices.insert(vi);
-      BOOST_FOREACH(edge_descriptor e, out_edges(v, g)) {
-	// and add its neighbours
-	unsigned int ui = get(vertex_index, g, target(e, g));
-	bags[vi].vertices.insert(ui);
-	// add the edge to the bag if the edge is 'genuine'
-	if (not filling_edge[e])
-	  bags[vi].edges.push_back(make_pair(vi, ui));
+      bags[vi]->vertices.insert(vi);
+      for (auto e : as_range(out_edges(v, g))) {
+        // and add its neighbours
+        uint ui = get(vertex_index, g, target(e, g));
+        bags[vi]->vertices.insert(ui);
+        // add the edge to the bag if the edge is 'genuine'
+        if (not filling_edge[e])
+          bags[vi]->edges.push_back(std::make_pair(vi, ui));
       }
 
       // if we find the parent vertex index
       if (out_degree(v, g) > 0) {
-	vertex_descriptor u = *find_first_of(vertices, adjacent_vertices(v, g));
-	parent[vi] = get(vertex_index, g, u);
+        auto u = *find_first_of(vertices, adjacent_vertices(v, g));
+        parent[vi] = get(vertex_index, g, u);
       }
 
       // eliminate vertex, marking filling edges as we add them
-      BOOST_FOREACH(vertex_descriptor a, adjacent_vertices(v, g)) {
-	BOOST_FOREACH(vertex_descriptor b, adjacent_vertices(v, g)) {
-	  if (a != b and not edge(a, b, g).second) {
-	    edge_descriptor e = add_edge(a, b, free_edge_index++, g).first;
-	    filling_edge[e] = true;
-	  }
-	}
+      for (auto a : as_range(adjacent_vertices(v, g))) {
+        for (auto b : as_range(adjacent_vertices(v, g))) {
+          if (a != b and not edge(a, b, g).second) {
+            auto e = add_edge(a, b, free_edge_index++, g).first;
+            filling_edge[e] = true;
+          }
+        }
       }
       clear_vertex(v, g);
       remove_vertex(v, g);
@@ -105,63 +123,45 @@ namespace tree_decomposition {
 
     // ok, now we have a list of bags each with a parent index
     // time to unroll the tree
-    tree_decomposition tree;
 
-    // again we need a vector of tree nodes (booring!)
-    vector<tree_decomposition::iterator> nodes(bags.size());
-
-    // iterate the vertex ordering backward, the first (= last) bag
-    // is going to be the tree root
-    typename Range::const_reverse_iterator ri = order.rbegin(), ri_end = order.rend();
-    nodes[*ri] = tree.set_head(bags[*ri]);
-    ++ ri;
-    while (ri != ri_end) {
-      nodes[*ri] = tree.append_child(nodes[parent[*ri]], bags[*ri]);
-      ++ ri;
+    for (auto i : order | adaptors::reversed) {
+      if (parent.find(i) != parent.end())
+        bags[parent[i]]->children.push_back(bags[i]);
     }
 
-    return tree;
+    return bags[order.back()];
   }
 
-  unsigned int tree_width(const tree_decomposition& t)
+  unsigned int max_bag_size(tree_decomposition t)
   {
-    unsigned int max = 0;
-    tree_decomposition::iterator ti;
-    for(ti = t.begin(); ti != t.end(); ++ti)
-      if (ti->vertices.size() > max)
-	max = ti->vertices.size();
-    return max - 1;
+    auto max = t->vertices.size();
+    for (auto b : t->children) {
+      auto m = max_bag_size(b);
+      if (m > max)
+        max = m;
+    }
+    return max;
   }
 
-  void print_tree(std::ostream& o,
-		  tree_decomposition::sibling_iterator ti,
-		  const tree_decomposition& t)
+  std::ostream& operator<<(std::ostream& o, tree_decomposition t)
   {
     o << "( ";
-    BOOST_FOREACH(unsigned int v, ti->vertices) {
+    for (auto v : t->vertices) {
       o << v << " ";
     }
-    if (not ti->edges.empty()) {
+    if (not t->edges.empty()) {
       o << "| ";
-      std::pair<unsigned, unsigned> p;
-      BOOST_FOREACH(p, ti->edges) {
-	o << p.first << "-" << p.second << " ";
+      for (auto p : t->edges) {
+        o << p.first << "-" << p.second << " ";
       }
     }
     o << ") ";
-    tree_decomposition::sibling_iterator
-      sib = t.begin(ti), sib_end = t.end(ti);
-    if (sib != sib_end) {
+    if (t->children.size()) {
       o << "{ ";
-      for (; sib != sib_end; ++sib)
-	print_tree(o, sib, t);
+      for (auto b : t->children)
+        o << b;
       o << "} ";
     }
-  }
-
-  std::ostream& operator<<(std::ostream& o, const tree_decomposition& t)
-  {
-    print_tree(o, t.begin(), t);
     return o;
   }
 }

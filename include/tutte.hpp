@@ -3,9 +3,9 @@
  *
  *
  *  Created by Andrea Bedini on 24/Nov/2011.
- *  Copyright 2011, 2012 Andrea Bedini.
+ *  Copyright (c) 2011-2013, Andrea Bedini <andrea.bedini@gmail.com>.
  *
- *  Distributed under the terms of the GNU General Public License.
+ *  Distributed under the terms of the Modified BSD License.
  *  The full license is in the file COPYING, distributed as part of
  *  this software.
  *
@@ -14,29 +14,8 @@
 #ifndef TUTTE_HPP
 #define TUTTE_HPP
 
-#include "transfer.hpp"
 #include "connectivity/connectivity.hpp"
 #include <boost/unordered/unordered_map.hpp>
-
-namespace {
-  template<class M, class C>
-  class mapped_connect {
-    M m;
-    C& c;
-  public:
-    mapped_connect(M m, C& c) : m(m), c(c)
-    { }
-
-    void operator()(unsigned int i, unsigned int j) const {
-      c.connect(m[i], m[j]);
-    }
-  };
-
-  template<class M, class C>
-  mapped_connect<M, C> make_mapped_connect(M m, C& c) {
-    return mapped_connect<M, C>(m, c);
-  }
-}
 
 template<class Weight>
 class tutte
@@ -45,9 +24,8 @@ class tutte
   const Weight v;
 
 public:
-  typedef Weight weight_type;
-  typedef boost::unordered_map<connectivity, weight_type> table_type;
-  typedef typename table_type::const_iterator table_const_iterator;
+  using weight_type = Weight ;
+  using table_type = boost::unordered_map<connectivity, weight_type>;
 
   template<class T, class U>
   tutte(T const& Q_, U const& v_) : Q(Q_), v(v_) {}
@@ -63,10 +41,10 @@ public:
   join_operator(unsigned int i, unsigned int j, table_type const& t) const
   {
     table_type tmp_table;
-    for (table_const_iterator it = t.begin(); it != t.end(); ++it) {
-      tmp_table[it->first] += it->second;
-      tmp_table[connectivity(it->first).connect(i, j).canonicalize()]
-	+= it->second * v;
+    for (auto const & e : t) {
+      tmp_table[e.first] += e.second;
+      tmp_table[connectivity(e.first).connect(i, j).canonicalize()]
+        += e.second * v;
     }
     return tmp_table;
   }
@@ -75,9 +53,9 @@ public:
   delete_operator(unsigned int i, table_type const& t) const
   {
     table_type tmp_table;
-    for (table_const_iterator it = t.begin(); it != t.end(); ++it) {
-      tmp_table[connectivity(it->first).delete_node(i).canonicalize()]
-	+= it->first.singleton(i) ? (it->second * Q) : it->second;
+    for (auto const& e : t) {
+      tmp_table[connectivity(e.first).delete_node(i).canonicalize()]
+        += (e.first.singleton(i) ? (e.second * Q) : e.second);
     }
     return tmp_table;
   }
@@ -85,20 +63,20 @@ public:
   template<class Mapping>
   table_type
   table_fusion(Mapping A_to_B,
-	       table_type const& A_table,
-	       table_type const& B_table) const
+    table_type const& A_table,
+    table_type const& B_table) const
   {
     table_type tmp_table;
-    table_const_iterator iA, iB;
-    for (iA = A_table.begin(); iA != A_table.end(); ++ iA) {
-      for (iB = B_table.begin(); iB != B_table.end(); ++ iB) {
-	connectivity c = iB->first;
-	iA->first.decompose(make_mapped_connect(A_to_B, c));
-	tmp_table[c.canonicalize()] += iA->second * iB->second;
+    for (auto const & eA : A_table) {
+      for (auto const & eB : B_table) {
+        connectivity c = eB.first;
+        eA.first.decompose([&](unsigned int i, unsigned int j) {
+          c.connect(A_to_B[i], A_to_B[j]);
+        });
+        tmp_table[c.canonicalize()] += eA.second * eB.second;
       }
     }
     return tmp_table;
   }
 };
-
 #endif
