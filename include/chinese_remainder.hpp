@@ -3,7 +3,7 @@
  *
  *
  *  Created by Andrea Bedini on 24/Nov/2011.
- *  Copyright (c) 2011-2013, Andrea Bedini <andrea.bedini@gmail.com>.
+ *  Copyright (c) 2011-2014, Andrea Bedini <andrea.bedini@gmail.com>.
  *
  *  Distributed under the terms of the Modified BSD License.
  *  The full license is in the file COPYING, distributed as part of
