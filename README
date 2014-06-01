@@ -29,14 +29,6 @@ using the algorithm described in:
     The required library (program_options) will be compiled
     automatically by the build system.
 
-  - Boost.Build, distributed with the Boost libraries
-
-    The rationale behind the choice of Boost.Build is in the binary
-    incompatibilities between GNU libstdc++ in C++98 mode and in C++11
-    mode and the new libc++ standard library than clang uses.
-    Boost.Build assures everything is built with the same compilation
-    flags, preventing linking issues.
-
 * Compilation and installation
 
   You need to set the environment variable BOOST_ROOT to the directory
@@ -47,30 +39,17 @@ using the algorithm described in:
 
   $ git clone git://github.com/andreabedini/tutte.git
   $ cd tutte
+  $ mkdir build
+  $ cmake ..
+  $ make
 
-  Then, if you are using gcc
+  Run some tests
 
-  $ b2 gcc release
+  $ make test
 
-  and if you are using clang
+  Optionally
 
-  $ b2 clang release
-
-  The path to the boost libraries can also be specified on the command
-  line:
-
-  $ b2 -sBOOST_ROOT=$HOME/boost_1_53_0 gcc release
-
-  A version suitable for debugging can be obtained by replacing
-  'release' with 'debug' in the command line.
-
-  On successful build, the executable 'tutte' will be placed in
-  the subfolder 'bin'.
-
-  A small set of tests in executed after each
-  build but they can be run again invoking
-
-  ./run_tests.sh bin/tutte
+  $ make install
 
 * Input
 
