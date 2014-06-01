@@ -26,16 +26,7 @@ using the algorithm described in:
 
   - Boost libraries, http://www.boost.org
 
-    The required library (program_options) will be compiled
-    automatically by the build system.
-
 * Compilation and installation
-
-  You need to set the environment variable BOOST_ROOT to the directory
-  where the Boost libraries are located or supply the path on the
-  command line.
-
-  To compile the program you have to do
 
   $ git clone git://github.com/andreabedini/tutte.git
   $ cd tutte
