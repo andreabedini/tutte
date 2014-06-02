@@ -5,7 +5,7 @@ before_install:
   - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
   - sudo add-apt-repository -y ppa:boost-latest/ppa
   - sudo apt-get update
-  - sudo apt-get install -qq cmake g++-4.8 libboost1.55-all-dev libgmp-dev
+  - sudo apt-get install -qq cmake g++-4.8 libboost-program-options1.55-dev libgmp-dev
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
 before_script:
   - mkdir build
