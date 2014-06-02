@@ -6,7 +6,7 @@ before_install:
   - sudo add-apt-repository -y ppa:boost-latest/ppa
   - sudo apt-get update
   - sudo apt-get install -qq cmake g++-4.8 libboost1.55-all-dev libgmp-dev
-  - echo 2 | sudo update-alternatives --config gcc
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 50
 before_script:
   - mkdir build
   - cd build
