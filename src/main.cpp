@@ -61,8 +61,8 @@ void parse_elimination_order(std::string const& s, OutputIterator out)
 template<class Range, class Graph>
 bool validate_elimination_order(Range range, Graph const& g)
 {
-  using namespace boost;
-  return equal(sort(range), irange((size_t) 0, num_vertices(g)));
+	using namespace boost;
+  return range::equal(sort(range), irange((size_t) 0, num_vertices(g)));
 }
 
 /*
