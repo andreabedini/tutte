@@ -34,9 +34,9 @@ add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS tutte)
 
 # Packaging
 
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "computes the Tutte Polynomial")
-set(CPACK_PACKAGE_CONTACT "Andrea Bedini <andrea.bedini@gmail.com>")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/COPYING")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Tutte computes the Tutte Polynomial")
+set(CPACK_PACKAGE_CONTACT "Andrea Bedini <andrea@andreabedini.com>")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_PACKAGE_VERSION_MAJOR "${Tutte_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${Tutte_VERSION_MINOR}")
 include(CPack)
