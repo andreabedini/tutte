@@ -1,3 +1,4 @@
+[![DOI](https://zenodo.org/badge/7975/andreabedini/tutte.svg)](http://dx.doi.org/10.5281/zenodo.15941)
 [![Build Status](https://travis-ci.org/andreabedini/tutte.svg?branch=travis_tests)](https://travis-ci.org/andreabedini/tutte)
 
 # Tutte
