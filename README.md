@@ -50,7 +50,7 @@ E.g. you can do
 
 The input format looks like this:
 
-0--1,1--2,2--3,3--0,4--5,5--6,6--7,7--4
+    0--1,1--2,2--3,3--0,4--5,5--6,6--7,7--4
 
 This describe a graph with 8 vertices and 8 edges. Each edge is represented as a pair of numbers each representing a vertex.
 
