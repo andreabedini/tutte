@@ -3,7 +3,7 @@
 
 # Tutte
 
-This program computes the Tutte Polynomial of a user-supplied graph
+This program computes the Tutte polynomial of a user-supplied graph
 using the algorithm described in:
 
 > Bedini, A. & Jacobsen, J.L. A tree-decomposed transfer matrix for
