@@ -37,6 +37,24 @@ namespace chinese_remainder {
 
   using tree_decomposition::bag_ptr;
 
+  template<typename T>
+  void check_and_wrap(T& t, mpz_int const& pp)
+  {
+    auto limit = pp >> 1;
+    t %= pp;
+    if (t > limit) {
+      t -= pp;
+    }
+  }
+
+  template<typename T>
+  void check_and_wrap(polynomial_two<T>& result, mpz_int const& pp)
+  {
+    for (auto& e : result) {
+      check_and_wrap(e.c, pp);
+    }
+  }
+
   template<template<class> class Algorithm, class... Args>
   void chinese_remainder(bag_ptr t, Args&&... args)
   {
@@ -65,17 +83,12 @@ namespace chinese_remainder {
 
       result = std::inner_product(partial_results, partial_results + k + 1, qs, big_t(0));
 
-      // this is specific to polynomial_two
-      mpz_int limit = pp >> 1;
-      for (auto& e : result) {
-        e.c %= pp;
-        if (e.c > limit)
-          e.c -= pp;
-      }
+      check_and_wrap(result, pp);
 
       ++ k;
     } while (result != result_last);
     std::cout << result << "\n";
   }
 }
+
 #endif
