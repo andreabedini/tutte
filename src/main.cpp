@@ -61,12 +61,12 @@ void parse_elimination_order(std::string const& s, OutputIterator out)
 template<class Range, class Graph>
 bool validate_elimination_order(Range range, Graph const& g)
 {
-	using namespace boost;
+  using namespace boost;
   return range::equal(sort(range), irange((size_t) 0, num_vertices(g)));
 }
 
 /*
- *  The algorithm to run, dependent on the weight type 
+ *  The algorithm to run, dependent on the weight type
  */
 
 template<typename T>
@@ -90,6 +90,8 @@ int main (int argc, char *argv[])
     // tutte options
     ("flow,f", "Compute the flow polynomial")
     ("chromatic,c", "Compute the chromatic polynomial")
+    ("Q,Q", po::value<int32_t>(), "Fix Q value, to be used with v")
+    ("v,v", po::value<int32_t>(), "Fix v value, to be used with Q")
     ("chinese-remainder", "Use the chinese remainder trick.")
     ;
 
@@ -192,20 +194,27 @@ int main (int argc, char *argv[])
   if (vm.count("tree-only"))
     return 0;
 
-  auto Q = polynomial_two<int>::Q();
-  auto v = polynomial_two<int>::v();
-
-  if (vm.count("flow")) {
-    v = -Q;
-  } else if (vm.count("chromatic")) {
-    v = -1;
-  }
-
-  if (vm.count("chinese-remainder")) {
-    chinese_remainder::chinese_remainder<algo>(td, Q, v);
+  if (vm.count("Q") && vm.count("v")) {
+    std::cerr << "Running with fixed values of Q and v\n";
+    auto Q = vm["Q"].as<int32_t>();
+    auto v = vm["v"].as<int32_t>();
+    chinese_remainder::chinese_remainder<tutte>(td, Q, v);
   } else {
-    using gmp::mpz_int;
-    auto result = transfer::transfer(algo<mpz_int>(Q, v), td);
-    std::cout << result << "\n";
+    auto Q = polynomial_two<int>::Q();
+    auto v = polynomial_two<int>::v();
+
+    if (vm.count("flow")) {
+      v = -Q;
+    } else if (vm.count("chromatic")) {
+      v = -1;
+    }
+
+    if (vm.count("chinese-remainder")) {
+      chinese_remainder::chinese_remainder<algo>(td, Q, v);
+    } else {
+      using gmp::mpz_int;
+      auto result = transfer::transfer(algo<mpz_int>(Q, v), td);
+      std::cout << result << "\n";
+    }
   }
 }
