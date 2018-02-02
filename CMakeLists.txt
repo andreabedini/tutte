@@ -3,15 +3,28 @@ project(Tutte CXX)
 set(Tutte_VERSION_MAJOR 1)
 set(Tutte_VERSION_MINOR 3)
 
+option(STATIC_LINK "Link statically" OFF)
+
+unset(LIBGMP CACHE)
+if (STATIC_LINK)
+    set(GMP_NAME libgmp.a)
+    set(Boost_USE_STATIC_LIBS ON)
+else (STATIC_LINK)
+    set(GMP_NAME gmp)
+endif (STATIC_LINK)
+
 include_directories("${PROJECT_SOURCE_DIR}/include")
 
-find_library(LIBGMP gmp REQUIRED)
+find_library(LIBGMP ${GMP_NAME} REQUIRED)
 find_package(Boost REQUIRED COMPONENTS program_options)
 
 include_directories(${Boost_INCLUDE_DIRS})
 add_executable(tutte src/main.cpp src/parse_graph.cpp)
 set_target_properties(tutte PROPERTIES COMPILE_FLAGS "-std=c++11 -Wall -pedantic -O3")
 target_link_libraries(tutte ${Boost_LIBRARIES} ${LIBGMP})
+if (STATIC_LINK)
+    target_link_libraries(tutte -static-libgcc -static-libstdc++)
+endif (STATIC_LINK)
 install(TARGETS tutte DESTINATION bin)
 
 # Testing
@@ -39,4 +52,5 @@ set(CPACK_PACKAGE_CONTACT "Andrea Bedini <andrea@andreabedini.com>")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
 set(CPACK_PACKAGE_VERSION_MAJOR "${Tutte_VERSION_MAJOR}")
 set(CPACK_PACKAGE_VERSION_MINOR "${Tutte_VERSION_MINOR}")
+
 include(CPack)
