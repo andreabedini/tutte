@@ -1,4 +1,5 @@
 FROM ubuntu:16.04 AS builder
+LABEL org.opencontainers.image.source https://github.com/andreabedini/tutte
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
