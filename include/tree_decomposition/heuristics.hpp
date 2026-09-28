@@ -100,7 +100,9 @@ namespace heuristics {
     vertex current = *min_element(vertices(g), compare);
     while (num_vertices(g) > 0) {
       *out++ = get(vertex_index, g, current);
-      vertex next = *min_element(adjacent_vertices(current, g), compare);
+      vertex next = degree(current, g) == 0
+        ? *min_element(vertices(g), compare)
+        : *min_element(adjacent_vertices(current, g), compare);
       eliminate_vertex(current, g);
       current = next;
     }

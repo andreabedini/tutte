@@ -56,7 +56,8 @@ namespace chinese_remainder {
   }
 
   template<template<class> class Algorithm, class... Args>
-  void chinese_remainder(bag_ptr t, Args&&... args)
+  typename Algorithm<mpz_int>::weight_type
+  chinese_remainder_result(bag_ptr t, Args&&... args)
   {
     using modular::Zp;
     using big_t = typename Algorithm<mpz_int>::weight_type;
@@ -87,7 +88,14 @@ namespace chinese_remainder {
 
       ++ k;
     } while (result != result_last);
-    std::cout << result << "\n";
+    return result;
+  }
+
+  template<template<class> class Algorithm, class... Args>
+  void chinese_remainder(bag_ptr t, Args&&... args)
+  {
+    std::cout << chinese_remainder_result<Algorithm>(
+      t, std::forward<Args>(args)...) << "\n";
   }
 }
 
