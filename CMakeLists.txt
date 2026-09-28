@@ -36,6 +36,7 @@ macro(do_test arg)
 endmacro(do_test)
 
 do_test(square4x4ff)
+do_test(self_loop)
 do_test(tutte_Gppp_N=1_L=4_M=1)
 do_test(tutte_Gppp_N=1_L=4_M=2)
 do_test(tutte_Gppp_N=2_L=4_M=1)
