@@ -219,6 +219,11 @@ int main (int argc, char *argv[])
   for (int i = 0; i < num_components; ++i)
     components.push_back(extract_component(g, component, i));
 
+  std::vector<int> component_by_vertex(num_vertices(g));
+  graph_type::vertex_iterator vi, vi_end;
+  for (tie(vi, vi_end) = vertices(g); vi != vi_end; ++vi)
+    component_by_vertex[get(boost::vertex_index, g, *vi)] = get(component, *vi);
+
   std::vector<unsigned int> user_order;
   if (vm.count("elimination-order")) {
     user_order.resize(num_vertices(g));
@@ -228,6 +233,21 @@ int main (int argc, char *argv[])
     if (not valid) {
       std::cerr << "error: elimination order not valid\n";
       return 1;
+    }
+    if (num_components > 1) {
+      std::vector<bool> seen_component(num_components, false);
+      int current_component = -1;
+      for (auto v : user_order) {
+        auto const next_component = component_by_vertex[v];
+        if (next_component != current_component) {
+          if (seen_component[next_component]) {
+            std::cerr << "error: elimination order must keep connected components contiguous\n";
+            return 1;
+          }
+          seen_component[next_component] = true;
+          current_component = next_component;
+        }
+      }
     }
     std::cerr << "Vertex ordering: " << s << "\n";
   }
