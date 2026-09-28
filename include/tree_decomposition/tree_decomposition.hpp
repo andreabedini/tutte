@@ -107,6 +107,7 @@ namespace tree_decomposition {
       }
 
       // if we find the parent vertex index
+      parent.erase(vi);
       for (auto u : as_range(adjacent_vertices(v, g))) {
         uint ui = get(vertex_index, g, u);
         if (ui != vi) {
