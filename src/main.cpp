@@ -215,6 +215,7 @@ int main (int argc, char *argv[])
   auto num_components = connected_components(g, component);
 
   std::vector<graph_component> components;
+  components.reserve(num_components);
   for (int i = 0; i < num_components; ++i)
     components.push_back(extract_component(g, component, i));
 
