@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <iosfwd>
+#include <set>
 #include <vector>
 
 namespace {
@@ -93,7 +94,10 @@ namespace tree_decomposition {
 
       // add to each vertex bag the vertex (index) vi
       bags[vi]->vertices.insert(vi);
+      std::set<uint> seen_edges;
       for (auto e : as_range(out_edges(v, g))) {
+        if (not seen_edges.insert(get(edge_index, g, e)).second)
+          continue;
         // and add its neighbours
         uint ui = get(vertex_index, g, target(e, g));
         bags[vi]->vertices.insert(ui);
@@ -103,9 +107,12 @@ namespace tree_decomposition {
       }
 
       // if we find the parent vertex index
-      if (out_degree(v, g) > 0) {
-        auto u = *find_first_of(vertices, adjacent_vertices(v, g));
-        parent[vi] = get(vertex_index, g, u);
+      for (auto u : as_range(adjacent_vertices(v, g))) {
+        uint ui = get(vertex_index, g, u);
+        if (ui != vi) {
+          parent[vi] = ui;
+          break;
+        }
       }
 
       // eliminate vertex, marking filling edges as we add them
