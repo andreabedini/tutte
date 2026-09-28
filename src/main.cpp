@@ -244,6 +244,10 @@ int main (int argc, char *argv[])
         if (local >= 0)
           *it++ = local;
       }
+      if (not validate_elimination_order(order, current_component.graph)) {
+        std::cerr << "error: elimination order not valid\n";
+        return 1;
+      }
     } else {
       compute_order(current_component.graph, vm, order.begin());
     }

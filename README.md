@@ -62,6 +62,8 @@ Alternatively an input file can be specified with the option --input-file
 
 The input graph does not need to be connected. The program computes the result by factorizing over the connected components.
 
+Because vertices are inferred from the largest label in the input, omitted vertex ids inside the range [0..V) are treated as isolated vertices.
+
 ## Options
 
 A list of options is available with the `--help` command
