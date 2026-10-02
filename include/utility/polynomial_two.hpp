@@ -225,6 +225,7 @@ public:
     for (auto const& e1 : rhs.elements_)
       for (auto const& e2 : elements_)
         result.coeff(e1.i + e2.i, e1.j + e2.j) += e1.c * e2.c;
+    result.cleanup();
     swap(result);
     return *this;
   }

@@ -23,6 +23,7 @@
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
+#include <boost/iterator/counting_iterator.hpp>
 #include <boost/property_map/vector_property_map.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm/equal.hpp>
@@ -71,6 +72,71 @@ bool validate_elimination_order(Range range, Graph const& g)
 
 template<typename T>
 using algo = tutte<polynomial_two<T>>;
+
+struct graph_component {
+  graph_type graph;
+  std::vector<unsigned int> local_to_global;
+};
+
+template<class ComponentMap>
+std::vector<graph_component> extract_components(graph_type const& g,
+  ComponentMap component_map, int num_components,
+  std::vector<int>& component_by_vertex,
+  std::vector<unsigned int>& global_to_local)
+{
+  std::vector<graph_component> result(num_components);
+  auto global_vertex_index = get(boost::vertex_index, g);
+  component_by_vertex.resize(num_vertices(g));
+  global_to_local.resize(num_vertices(g));
+
+  graph_type::vertex_iterator vi, vi_end;
+  for (tie(vi, vi_end) = vertices(g); vi != vi_end; ++vi) {
+    auto const global = get(global_vertex_index, *vi);
+    auto const current_component = get(component_map, *vi);
+    component_by_vertex[global] = current_component;
+    global_to_local[global] = result[current_component].local_to_global.size();
+    result[current_component].local_to_global.push_back(global);
+  }
+
+  std::vector<std::vector<std::pair<unsigned int, unsigned int> > > edge_lists(
+    num_components);
+  graph_type::edge_iterator ei, ei_end;
+  for (tie(ei, ei_end) = edges(g); ei != ei_end; ++ei) {
+    auto source_v = source(*ei, g);
+    auto target_v = target(*ei, g);
+    auto const current_component = get(component_map, source_v);
+    edge_lists[current_component].push_back(std::make_pair(
+      global_to_local[get(global_vertex_index, source_v)],
+      global_to_local[get(global_vertex_index, target_v)]));
+  }
+
+  for (int i = 0; i < num_components; ++i) {
+    boost::counting_iterator<int> edge_index(0);
+    result[i].graph = graph_type(edge_lists[i].begin(), edge_lists[i].end(),
+      edge_index, result[i].local_to_global.size());
+
+    unsigned int j = 0;
+    for (tie(vi, vi_end) = vertices(result[i].graph); vi != vi_end; ++vi)
+      put(boost::vertex_index, result[i].graph, *vi, j++);
+  }
+
+  return result;
+}
+
+template<class OutputIterator>
+void compute_order(graph_type const& g, boost::program_options::variables_map const& vm,
+  OutputIterator out)
+{
+  if (vm.count("fill-in")) {
+    heuristics::greedy_fillin_order(g, out);
+  } else if (vm.count("local-degree")) {
+    heuristics::greedy_local_degree_order(g, out);
+  } else if (vm.count("local-fill-in")) {
+    heuristics::greedy_local_fillin_order(g, out);
+  } else {
+    heuristics::greedy_degree_order(g, out);
+  }
+}
 
 int main (int argc, char *argv[])
 {
@@ -147,48 +213,93 @@ int main (int argc, char *argv[])
   std::cerr << "Graph with " << num_vertices(g) << " vertices and "
             << num_edges(g) << " edges.\n";
 
-  // check for connectedness
   auto component = boost::make_vector_property_map<int>(
     get(boost::vertex_index, g));
-  auto num = connected_components(g, component);
-  if (num > 1) {
-    std::cerr << "The input graph is not connected. A connected input is required\n";
-    return 1;
-  }
+  auto num_components = connected_components(g, component);
 
-  std::vector<unsigned int> order(num_vertices(g));
+  std::vector<int> component_by_vertex(num_vertices(g));
+  std::vector<unsigned int> global_to_local(num_vertices(g));
+  auto components = extract_components(g, component, num_components,
+    component_by_vertex, global_to_local);
 
-  if (vm.count("fill-in")) {
-    heuristics::greedy_fillin_order(g, order.begin());
-  } else if (vm.count("local-degree")) {
-    heuristics::greedy_local_degree_order(g, order.begin());
-  } else if (vm.count("local-fill-in")) {
-    heuristics::greedy_local_fillin_order(g, order.begin());
-  } else if (vm.count("elimination-order")) {
-    // parse the std::string
+  std::vector<unsigned int> user_order;
+  std::vector<std::vector<unsigned int> > orders(num_components);
+  if (vm.count("elimination-order")) {
+    user_order.resize(num_vertices(g));
     std::string s = vm["elimination-order"].as<std::string>();
-    parse_elimination_order(s, order.begin());
-    bool valid = validate_elimination_order(order, g);
+    parse_elimination_order(s, user_order.begin());
+    bool valid = validate_elimination_order(user_order, g);
     if (not valid) {
       std::cerr << "error: elimination order not valid\n";
       return 1;
     }
+    for (int i = 0; i < num_components; ++i)
+      orders[i].reserve(components[i].local_to_global.size());
+
+    std::vector<bool> seen_component(num_components, false);
+    int current_component = -1;
+    for (auto v : user_order) {
+      auto const next_component = component_by_vertex[v];
+      if (next_component != current_component) {
+        if (seen_component[next_component]) {
+          std::cerr << "error: elimination order must keep connected components contiguous\n";
+          return 1;
+        }
+        seen_component[next_component] = true;
+        current_component = next_component;
+      }
+      orders[next_component].push_back(global_to_local[v]);
+    }
+
+    for (int i = 0; i < num_components; ++i) {
+      if (not validate_elimination_order(orders[i], components[i].graph)) {
+        std::cerr << "error: elimination order not valid\n";
+        return 1;
+      }
+    }
     std::cerr << "Vertex ordering: " << s << "\n";
-  } else {
-    heuristics::greedy_degree_order(g, order.begin());
   }
 
-  auto td = tree_decomposition::build_tree_decomposition(order, g);
+  std::vector<tree_decomposition::bag_ptr> decompositions;
+  decompositions.reserve(num_components);
+  for (int i = 0; i < num_components; ++i) {
+    if (not vm.count("elimination-order")) {
+      orders[i].resize(components[i].local_to_global.size());
+      compute_order(components[i].graph, vm, orders[i].begin());
+    }
+
+    decompositions.push_back(tree_decomposition::build_tree_decomposition(
+      orders[i], components[i].graph));
+  }
 
   if (vm.count("print-tree") or vm.count("tree-only")) {
-    std::cerr << "Elimination order: ";
-    for (auto x : order)
-      std::cerr << x << " ";
-    std::cerr << "\n";
+    if (num_components == 1) {
+      std::cerr << "Elimination order: ";
+      for (auto x : orders.front())
+        std::cerr << components.front().local_to_global[x] << " ";
+      std::cerr << "\n";
 
-    std::cerr << "Tree decomposition: " << td << "\n"
-              << "Tree decomposition width: "
-              << max_bag_size(td) - 1 << "\n";
+      std::cerr << "Tree decomposition: ";
+      tree_decomposition::print(std::cerr, decompositions.front(),
+        components.front().local_to_global);
+      std::cerr << "\n"
+                << "Tree decomposition width: "
+                << max_bag_size(decompositions.front()) - 1 << "\n";
+    } else {
+      for (std::size_t i = 0; i < components.size(); ++i) {
+        std::cerr << "Component " << i + 1 << " elimination order: ";
+        for (auto x : orders[i])
+          std::cerr << components[i].local_to_global[x] << " ";
+        std::cerr << "\n";
+
+        std::cerr << "Component " << i + 1 << " tree decomposition: ";
+        tree_decomposition::print(std::cerr, decompositions[i],
+          components[i].local_to_global);
+        std::cerr << "\n"
+                  << "Component " << i + 1 << " tree decomposition width: "
+                  << max_bag_size(decompositions[i]) - 1 << "\n";
+      }
+    }
   }
 
   if (vm.count("tree-only"))
@@ -198,7 +309,12 @@ int main (int argc, char *argv[])
     std::cerr << "Running with fixed values of Q and v\n";
     auto Q = vm["Q"].as<int32_t>();
     auto v = vm["v"].as<int32_t>();
-    chinese_remainder::chinese_remainder<tutte>(td, Q, v);
+    auto result = chinese_remainder::chinese_remainder_result<tutte>(
+      decompositions.front(), Q, v);
+    for (std::size_t i = 1; i < decompositions.size(); ++i)
+      result *= chinese_remainder::chinese_remainder_result<tutte>(
+        decompositions[i], Q, v);
+    std::cout << result << "\n";
   } else {
     auto Q = polynomial_two<int>::Q();
     auto v = polynomial_two<int>::v();
@@ -210,10 +326,17 @@ int main (int argc, char *argv[])
     }
 
     if (vm.count("chinese-remainder")) {
-      chinese_remainder::chinese_remainder<algo>(td, Q, v);
+      auto result = chinese_remainder::chinese_remainder_result<algo>(
+        decompositions.front(), Q, v);
+      for (std::size_t i = 1; i < decompositions.size(); ++i)
+        result *= chinese_remainder::chinese_remainder_result<algo>(
+          decompositions[i], Q, v);
+      std::cout << result << "\n";
     } else {
       using gmp::mpz_int;
-      auto result = transfer::transfer(algo<mpz_int>(Q, v), td);
+      auto result = polynomial_two<mpz_int>(1);
+      for (auto const& decomposition : decompositions)
+        result *= transfer::transfer(algo<mpz_int>(Q, v), decomposition);
       std::cout << result << "\n";
     }
   }

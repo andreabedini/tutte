@@ -60,7 +60,9 @@ Alternatively an input file can be specified with the option --input-file
 
     $ bin/tutte --input-file my_input
 
-NOTE: The input graph has to be connected, giving as input a graph with multiple connected components will result in a run-time error. This can be easily solved but I haven't had the time to work on it yet. Drop a line on the [bug report](https://github.com/andreabedini/tutte/issues/2) if you feel like helping out.
+The input graph does not need to be connected. The program computes the result by factorizing over the connected components.
+
+Because vertices are inferred from the largest label in the input, omitted vertex ids inside the range [0..V) are treated as isolated vertices.
 
 ## Options
 
@@ -95,4 +97,3 @@ A vertex elimination order (see Bodlaender & Koster (2010) for the terminology) 
 ## Remarks
 
 Edges are assigned to bags as they appear in the elimination ordering. For the sake of generality and maintenance, problem specific optimizations, such as the pruning procedure described in Bedini & Jacobsen (2010), are not implemented.
-

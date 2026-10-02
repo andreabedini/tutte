@@ -143,6 +143,30 @@ namespace tree_decomposition {
     return max;
   }
 
+  inline
+  std::ostream& print(std::ostream& o, tree_decomposition t,
+    std::vector<unsigned int> const& local_to_global)
+  {
+    o << "( ";
+    for (auto v : t->vertices) {
+      o << local_to_global[v] << " ";
+    }
+    if (not t->edges.empty()) {
+      o << "| ";
+      for (auto p : t->edges) {
+        o << local_to_global[p.first] << "-" << local_to_global[p.second] << " ";
+      }
+    }
+    o << ") ";
+    if (t->children.size()) {
+      o << "{ ";
+      for (auto b : t->children)
+        print(o, b, local_to_global);
+      o << "} ";
+    }
+    return o;
+  }
+
   std::ostream& operator<<(std::ostream& o, tree_decomposition t)
   {
     o << "( ";
