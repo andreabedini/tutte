@@ -76,46 +76,49 @@ using algo = tutte<polynomial_two<T>>;
 struct graph_component {
   graph_type graph;
   std::vector<unsigned int> local_to_global;
-  std::vector<int> global_to_local;
 };
 
 template<class ComponentMap>
-graph_component extract_component(graph_type const& g, ComponentMap component_map,
-  int current_component)
+std::vector<graph_component> extract_components(graph_type const& g,
+  ComponentMap component_map, int num_components,
+  std::vector<int>& component_by_vertex,
+  std::vector<unsigned int>& global_to_local)
 {
-  graph_component result;
+  std::vector<graph_component> result(num_components);
   auto global_vertex_index = get(boost::vertex_index, g);
-  result.global_to_local.assign(num_vertices(g), -1);
+  component_by_vertex.resize(num_vertices(g));
+  global_to_local.resize(num_vertices(g));
 
   graph_type::vertex_iterator vi, vi_end;
   for (tie(vi, vi_end) = vertices(g); vi != vi_end; ++vi) {
-    if (get(component_map, *vi) == current_component) {
-      auto const global = get(global_vertex_index, *vi);
-      result.global_to_local[global] = result.local_to_global.size();
-      result.local_to_global.push_back(global);
-    }
+    auto const global = get(global_vertex_index, *vi);
+    auto const current_component = get(component_map, *vi);
+    component_by_vertex[global] = current_component;
+    global_to_local[global] = result[current_component].local_to_global.size();
+    result[current_component].local_to_global.push_back(global);
   }
 
-  std::vector<std::pair<unsigned int, unsigned int> > edge_list;
+  std::vector<std::vector<std::pair<unsigned int, unsigned int> > > edge_lists(
+    num_components);
   graph_type::edge_iterator ei, ei_end;
   for (tie(ei, ei_end) = edges(g); ei != ei_end; ++ei) {
     auto source_v = source(*ei, g);
-    if (get(component_map, source_v) != current_component)
-      continue;
-
     auto target_v = target(*ei, g);
-    edge_list.push_back(std::make_pair(
-      result.global_to_local[get(global_vertex_index, source_v)],
-      result.global_to_local[get(global_vertex_index, target_v)]));
+    auto const current_component = get(component_map, source_v);
+    edge_lists[current_component].push_back(std::make_pair(
+      global_to_local[get(global_vertex_index, source_v)],
+      global_to_local[get(global_vertex_index, target_v)]));
   }
 
-  boost::counting_iterator<int> edge_index(0);
-  result.graph = graph_type(edge_list.begin(), edge_list.end(), edge_index,
-    result.local_to_global.size());
+  for (int i = 0; i < num_components; ++i) {
+    boost::counting_iterator<int> edge_index(0);
+    result[i].graph = graph_type(edge_lists[i].begin(), edge_lists[i].end(),
+      edge_index, result[i].local_to_global.size());
 
-  unsigned int i = 0;
-  for (tie(vi, vi_end) = vertices(result.graph); vi != vi_end; ++vi)
-    put(boost::vertex_index, result.graph, *vi, i++);
+    unsigned int j = 0;
+    for (tie(vi, vi_end) = vertices(result[i].graph); vi != vi_end; ++vi)
+      put(boost::vertex_index, result[i].graph, *vi, j++);
+  }
 
   return result;
 }
@@ -214,17 +217,13 @@ int main (int argc, char *argv[])
     get(boost::vertex_index, g));
   auto num_components = connected_components(g, component);
 
-  std::vector<graph_component> components;
-  components.reserve(num_components);
-  for (int i = 0; i < num_components; ++i)
-    components.push_back(extract_component(g, component, i));
-
   std::vector<int> component_by_vertex(num_vertices(g));
-  graph_type::vertex_iterator vi, vi_end;
-  for (tie(vi, vi_end) = vertices(g); vi != vi_end; ++vi)
-    component_by_vertex[get(boost::vertex_index, g, *vi)] = get(component, *vi);
+  std::vector<unsigned int> global_to_local(num_vertices(g));
+  auto components = extract_components(g, component, num_components,
+    component_by_vertex, global_to_local);
 
   std::vector<unsigned int> user_order;
+  std::vector<std::vector<unsigned int> > orders(num_components);
   if (vm.count("elimination-order")) {
     user_order.resize(num_vertices(g));
     std::string s = vm["elimination-order"].as<std::string>();
@@ -234,57 +233,56 @@ int main (int argc, char *argv[])
       std::cerr << "error: elimination order not valid\n";
       return 1;
     }
-    if (num_components > 1) {
-      std::vector<bool> seen_component(num_components, false);
-      int current_component = -1;
-      for (auto v : user_order) {
-        auto const next_component = component_by_vertex[v];
-        if (next_component != current_component) {
-          if (seen_component[next_component]) {
-            std::cerr << "error: elimination order must keep connected components contiguous\n";
-            return 1;
-          }
-          seen_component[next_component] = true;
-          current_component = next_component;
+    for (int i = 0; i < num_components; ++i)
+      orders[i].reserve(components[i].local_to_global.size());
+
+    std::vector<bool> seen_component(num_components, false);
+    int current_component = -1;
+    for (auto v : user_order) {
+      auto const next_component = component_by_vertex[v];
+      if (next_component != current_component) {
+        if (seen_component[next_component]) {
+          std::cerr << "error: elimination order must keep connected components contiguous\n";
+          return 1;
         }
+        seen_component[next_component] = true;
+        current_component = next_component;
+      }
+      orders[next_component].push_back(global_to_local[v]);
+    }
+
+    for (int i = 0; i < num_components; ++i) {
+      if (not validate_elimination_order(orders[i], components[i].graph)) {
+        std::cerr << "error: elimination order not valid\n";
+        return 1;
       }
     }
     std::cerr << "Vertex ordering: " << s << "\n";
   }
 
-  std::vector<std::vector<unsigned int> > orders;
   std::vector<tree_decomposition::bag_ptr> decompositions;
-  for (auto const& current_component : components) {
-    std::vector<unsigned int> order(current_component.local_to_global.size());
-
-    if (vm.count("elimination-order")) {
-      auto it = order.begin();
-      for (auto global : user_order) {
-        auto local = current_component.global_to_local[global];
-        if (local >= 0)
-          *it++ = local;
-      }
-      if (not validate_elimination_order(order, current_component.graph)) {
-        std::cerr << "error: elimination order not valid\n";
-        return 1;
-      }
-    } else {
-      compute_order(current_component.graph, vm, order.begin());
+  decompositions.reserve(num_components);
+  for (int i = 0; i < num_components; ++i) {
+    if (not vm.count("elimination-order")) {
+      orders[i].resize(components[i].local_to_global.size());
+      compute_order(components[i].graph, vm, orders[i].begin());
     }
 
-    orders.push_back(order);
-    decompositions.push_back(
-      tree_decomposition::build_tree_decomposition(order, current_component.graph));
+    decompositions.push_back(tree_decomposition::build_tree_decomposition(
+      orders[i], components[i].graph));
   }
 
   if (vm.count("print-tree") or vm.count("tree-only")) {
     if (num_components == 1) {
       std::cerr << "Elimination order: ";
       for (auto x : orders.front())
-        std::cerr << x << " ";
+        std::cerr << components.front().local_to_global[x] << " ";
       std::cerr << "\n";
 
-      std::cerr << "Tree decomposition: " << decompositions.front() << "\n"
+      std::cerr << "Tree decomposition: ";
+      tree_decomposition::print(std::cerr, decompositions.front(),
+        components.front().local_to_global);
+      std::cerr << "\n"
                 << "Tree decomposition width: "
                 << max_bag_size(decompositions.front()) - 1 << "\n";
     } else {
@@ -294,8 +292,10 @@ int main (int argc, char *argv[])
           std::cerr << components[i].local_to_global[x] << " ";
         std::cerr << "\n";
 
-        std::cerr << "Component " << i + 1 << " tree decomposition: "
-                  << decompositions[i] << "\n"
+        std::cerr << "Component " << i + 1 << " tree decomposition: ";
+        tree_decomposition::print(std::cerr, decompositions[i],
+          components[i].local_to_global);
+        std::cerr << "\n"
                   << "Component " << i + 1 << " tree decomposition width: "
                   << max_bag_size(decompositions[i]) - 1 << "\n";
       }
